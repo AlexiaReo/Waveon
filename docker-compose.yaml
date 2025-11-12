@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - mydbdata:/var/lib/postgresql/data
+      - mydbdata:/var/lib/postgresql
 
 volumes:
   mydbdata:
