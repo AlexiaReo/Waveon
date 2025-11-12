@@ -15,7 +15,7 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/api/artists")
+@RequestMapping("/artists")
 public class ArtistController {
     
     private final ArtistService artistService;
