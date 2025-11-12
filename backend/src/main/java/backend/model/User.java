@@ -1,6 +1,14 @@
 package backend.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table (name = "users")
 public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(columnDefinition = "serial")
     private Long id;
     private String username;
 
@@ -8,6 +16,8 @@ public class User {
         this.id = id;
         this.username = username;
     }
+
+    public User(){}
 
     public Long getId() {
         return id;
