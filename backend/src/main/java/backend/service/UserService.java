@@ -3,7 +3,8 @@ package backend.service;
 import backend.dto.UserDTO;
 import backend.mapper.UserMapper;
 import backend.model.User;
-import backend.repository.UserRepository;
+import backend.repository.DBUserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -12,10 +13,10 @@ import java.util.stream.Collectors;
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
+    private final DBUserRepository userRepository;
     private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository, UserMapper userMapper) {
+    public UserService(DBUserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
     }
