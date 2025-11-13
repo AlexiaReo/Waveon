@@ -1,15 +1,11 @@
 package backend.controller;
 
+import backend.dto.ArtistDTO;
 import backend.model.Artist;
 import backend.service.ArtistService;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import java.util.List;
 
@@ -17,7 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/artists")
 public class ArtistController {
-    
+
     private final ArtistService artistService;
 
     public ArtistController(ArtistService artistService) {
@@ -25,21 +21,27 @@ public class ArtistController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Artist> getArtistById(@PathVariable Long id) {
-        Artist artist = artistService.getArtistById(id);
-        return artist != null ? ResponseEntity.ok(artist) : ResponseEntity.notFound().build();
+    public ResponseEntity<ArtistDTO> getArtistById(@PathVariable Long id) {
+        ArtistDTO artist = artistService.getArtistById(id);
+        return ResponseEntity.ok(artist);
     }
 
     @GetMapping
-    public ResponseEntity<List<Artist>> getAllArtists() {
-        List<Artist> artists = artistService.getAllArtists();
+    public ResponseEntity<List<ArtistDTO>> getAllArtists() {
+        List<ArtistDTO> artists = artistService.getAllArtists();
         return ResponseEntity.ok(artists);
     }
 
+    @PostMapping
+    public ResponseEntity<ArtistDTO> createArtist(@RequestBody ArtistDTO dto) {
+        ArtistDTO createdArtist = artistService.createArtist(dto);
+        return new ResponseEntity<>(createdArtist, HttpStatus.CREATED);
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<Artist> updateArtist(@PathVariable Long id, @RequestBody Artist artist) {
-        Artist updatedArtist = artistService.updateArtist(id, artist);
-        return updatedArtist != null ? ResponseEntity.ok(updatedArtist) : ResponseEntity.notFound().build();
+    public ResponseEntity<ArtistDTO> updateArtist(@PathVariable Long id, @RequestBody ArtistDTO dto) {
+        ArtistDTO updatedArtist = artistService.updateArtist(id, dto);
+        return ResponseEntity.ok(updatedArtist);
     }
 
     @DeleteMapping("/{id}")
@@ -47,5 +49,4 @@ public class ArtistController {
         artistService.deleteArtist(id);
         return ResponseEntity.noContent().build();
     }
-
 }
