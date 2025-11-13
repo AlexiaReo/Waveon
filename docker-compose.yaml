@@ -2,10 +2,8 @@ version: '3'
 services:
   db:
     image: postgres
-    environment:
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_USER=user
-      - POSTGRES_DB=waveondb
+    env_file: "env.properties"
+    restart: unless-stopped
     ports:
       - "5432:5432"
     volumes:
