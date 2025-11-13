@@ -1,12 +1,10 @@
 package backend.controller;
 
-import backend.model.Playlist;
+import backend.dto.PlaylistDTO;
+import backend.mapper.PlaylistMapper;
 import backend.service.PlaylistService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -15,37 +13,31 @@ public class PlaylistController {
 
     private final PlaylistService playlistService;
 
-    @Autowired
     public PlaylistController(PlaylistService playlistService) {
         this.playlistService = playlistService;
     }
 
     @PostMapping
-    public ResponseEntity<Playlist> createPlaylist(@RequestBody Playlist newPlaylist) {
-        // Now passing the full Playlist object directly to the service
-        Playlist createdPlaylist = playlistService.createPlaylist(newPlaylist);
-        return new ResponseEntity<>(createdPlaylist, HttpStatus.CREATED);
+    public ResponseEntity<PlaylistDTO> createPlaylist(@RequestBody PlaylistDTO dto) {
+        PlaylistDTO created = playlistService.createPlaylist(dto);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
-
 
     @GetMapping
-    public ResponseEntity<List<Playlist>> getAllPlaylists() {
-        List<Playlist> playlists = playlistService.getAllPlaylists();
-        return ResponseEntity.ok(playlists);
+    public ResponseEntity<List<PlaylistDTO>> getAllPlaylists() {
+        return ResponseEntity.ok(playlistService.getAllPlaylists());
     }
 
-
     @GetMapping("/{id}")
-    public ResponseEntity<Playlist> getPlaylistById(@PathVariable Long id) {
-        Playlist playlist = playlistService.getPlaylistById(id);
-        return ResponseEntity.ok(playlist);
+    public ResponseEntity<PlaylistDTO> getPlaylistById(@PathVariable Long id) {
+        PlaylistDTO dto = playlistService.getPlaylistById(id);
+        return ResponseEntity.ok(dto);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Playlist> updatePlaylist(@PathVariable Long id, @RequestBody Playlist updatedPlaylist) {
-        // Passing the ID and the full Playlist object to the service
-        Playlist playlist = playlistService.updatePlaylist(id, updatedPlaylist);
-        return ResponseEntity.ok(playlist);
+    public ResponseEntity<PlaylistDTO> updatePlaylist(@PathVariable Long id, @RequestBody PlaylistDTO dto) {
+        PlaylistDTO updated = playlistService.updatePlaylist(id, dto);
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/{id}")

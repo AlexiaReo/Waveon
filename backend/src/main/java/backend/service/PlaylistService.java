@@ -1,52 +1,48 @@
 package backend.service;
 
+import backend.dto.PlaylistDTO;
+import backend.mapper.PlaylistMapper;
 import backend.model.Playlist;
 import backend.repository.PlaylistRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PlaylistService {
 
     private final PlaylistRepository playlistRepository;
+    private final PlaylistMapper playlistMapper;
 
-    @Autowired
-    public PlaylistService(PlaylistRepository playlistRepository) {
+    public PlaylistService(PlaylistRepository playlistRepository, PlaylistMapper playlistMapper) {
         this.playlistRepository = playlistRepository;
+        this.playlistMapper = playlistMapper;
     }
 
-    public Playlist createPlaylist(Playlist newPlaylist) {
-
-        return playlistRepository.save(newPlaylist);
+    public PlaylistDTO createPlaylist(PlaylistDTO dto) {
+        Playlist playlist = playlistMapper.toEntity(dto);
+        return playlistMapper.toDto(playlistRepository.save(playlist));
     }
 
-
-    public List<Playlist> getAllPlaylists() {
-        return playlistRepository.findAll();
+    public List<PlaylistDTO> getAllPlaylists() {
+        return playlistRepository.findAll().stream()
+                .map(playlistMapper::toDto)
+                .collect(Collectors.toList());
     }
 
-
-    public Playlist getPlaylistById(Long id) {
+    public PlaylistDTO getPlaylistById(Long id) {
         return playlistRepository.findById(id)
+                .map(playlistMapper::toDto)
                 .orElseThrow(() -> new RuntimeException("Playlist not found with id: " + id));
     }
 
-
-    public Playlist updatePlaylist(Long id, Playlist updatedPlaylist) {
-
-        Playlist existingPlaylist = getPlaylistById(id);
-
-        updatedPlaylist.setId(id);
-
-        return playlistRepository.update(updatedPlaylist);
+    public PlaylistDTO updatePlaylist(Long id, PlaylistDTO dto) {
+        Playlist updated = playlistMapper.toEntity(dto);
+        updated.setId(id);
+        return playlistMapper.toDto(playlistRepository.save(updated));
     }
 
     public void deletePlaylist(Long id) {
-
-        getPlaylistById(id);
-
         playlistRepository.deleteById(id);
     }
 }
