@@ -1,3 +1,29 @@
 spring:
   application:
     name: backend
+
+  config:
+    import: "optional:file:env.properties"
+
+  datasource:
+    url: ${DATABASE_URL}
+    username: ${DATABASE_USERNAME}
+    password: ${DATABASE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+logging:
+  level:
+    org.flywaydb: INFO
+
+server:
+  servlet:
+    context-path: /api
