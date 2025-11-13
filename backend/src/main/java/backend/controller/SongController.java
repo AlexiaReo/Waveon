@@ -18,20 +18,26 @@ public class SongController {
         this.songService = songService;
     }
 
-
     @PostMapping
     public ResponseEntity<Song> createSong(@RequestBody Song song) {
         Song newSong = songService.createSong(song);
         return new ResponseEntity<>(newSong, HttpStatus.CREATED);
     }
 
-
     @GetMapping
-    public ResponseEntity<List<Song>> getAllSongs() {
-        List<Song> songs = songService.getAllSongs();
+    public ResponseEntity<List<Song>> getSongs(
+            @RequestParam(required = false) String name) {
+
+        List<Song> songs;
+
+        if (name != null && !name.trim().isEmpty()) {
+            songs = songService.getSongsByName(name);
+        } else {
+            songs = songService.getAllSongs();
+        }
+
         return ResponseEntity.ok(songs);
     }
-
 
     @GetMapping("/{id}")
     public ResponseEntity<Song> getSongById(@PathVariable Long id) {
@@ -43,10 +49,13 @@ public class SongController {
         }
     }
 
-
     @PutMapping("/{id}")
-    public ResponseEntity<Song> updateSong(@PathVariable Long id, @RequestBody Song songDetails) {
+    public ResponseEntity<Song> updateSong(
+            @PathVariable Long id,
+            @RequestBody Song songDetails) {
+
         Song updatedSong = songService.updateSong(id, songDetails);
+
         if (updatedSong != null) {
             return ResponseEntity.ok(updatedSong);
         } else {
