@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/playlists")
+@CrossOrigin("*")
 public class PlaylistController {
 
     private final PlaylistService playlistService;
