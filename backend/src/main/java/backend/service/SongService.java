@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collection;
 
 @Service
 public class SongService {
@@ -32,12 +31,9 @@ public class SongService {
     }
 
     public List<Song> getAllSongs() {
-
-        Collection<Song> songCollection = songRepository.findAll();
-        List<Song> songList = new ArrayList<>(songCollection);
-
-        return songList;
+        return new ArrayList<>(songRepository.findAll());
     }
+
 
     public Song updateSong(Long id, Song updatedSong) {
         Song existingSong = songRepository.findById(id);
@@ -63,4 +59,19 @@ public class SongService {
         }
         return false;
     }
+
+    public List<Song> getSongsByName(String name) {
+        List<Song> allSongs = new ArrayList<>(songRepository.findAll());
+
+        if (name == null || name.trim().isEmpty()) {
+            return allSongs;
+        }
+
+        String lower = name.toLowerCase();
+
+        return allSongs.stream()
+                .filter(song -> song.getName() != null && song.getName().toLowerCase().contains(lower))
+                .toList();
+    }
+
 }
