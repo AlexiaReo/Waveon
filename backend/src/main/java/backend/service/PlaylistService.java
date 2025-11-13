@@ -28,7 +28,7 @@ public class PlaylistService {
         if (dto.user_id() == null) {
             throw new IllegalArgumentException("user_id cannot be null");
         }
-        User user = userRepository.findById(dto.user_id())
+        User user = userRepository.findById(dto.user_id().id())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + dto.user_id()));
         playlist.setUser(user);
         Playlist saved = playlistRepository.save(playlist);
@@ -57,7 +57,7 @@ public class PlaylistService {
         existing.setVisibility(dto.visibility());
 
         if (!existing.getUser().getId().equals(dto.user_id())) {
-            User user = userRepository.findById(dto.user_id())
+            User user = userRepository.findById(dto.user_id().id())
                     .orElseThrow(() -> new RuntimeException("User not found with id: " + dto.user_id()));
             existing.setUser(user);
         }

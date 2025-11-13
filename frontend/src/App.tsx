@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import {StartComponent} from "./components/StartComponent.tsx";
+
+import {HomePage} from "./components/HomePage.tsx";
 import {PrimeReactProvider} from "primereact/api";
 
 import 'primereact/resources/themes/md-dark-deeppurple/theme.css';
@@ -9,12 +9,12 @@ import './App.css'
 
 
 function App() {
-    const [count, setCount] = useState(0)
+    // const [count, setCount] = useState(0)
 
     return (
         <>
             <PrimeReactProvider>
-                <StartComponent></StartComponent>
+                <HomePage></HomePage>
             </PrimeReactProvider>
         </>
     )
