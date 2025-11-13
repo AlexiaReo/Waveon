@@ -5,14 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="38819202-d24d-4686-856e-6cf9878b3e36" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/backend/src/main/java/backend/repository/DBUserRepository.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/backend/src/main/resources/db/migration/V1__create_user_table.sql" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/env.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/backend/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/java/backend/model/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/java/backend/model/User.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/src/main/resources/application.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/src/main/resources/application.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docker-compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -106,10 +99,10 @@
     &quot;accountId&quot;: &quot;cabefcf8-4832-4c65-9363-69010297d0a5&quot;
   }
 }</component>
-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
-  <component name="KubernetesApiProvider"><![CDATA[{
-  "isMigrated": true
-}]]></component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
   </component>
@@ -136,7 +129,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "Spring Boot.BackendApplication.executor": "Run",
     "Spring Boot.Unnamed.executor": "Debug",
-    "git-widget-placeholder": "task/AN/add-hibernate-and-flyway",
+    "git-widget-placeholder": "task/AN/modified-gitignore",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "C:/Users/cioco/proiect-colectiv/Waveon/backend/src/main/resources/db/migration",
     "node.js.detected.package.eslint": "true",
@@ -173,17 +166,6 @@
         <option value="SpringBootApplicationConfigurationType" />
         <option value="js.build_tools.npm" />
       </set>
-    </option>
-    <option name="configurationStatuses">
-      <map>
-        <entry key="SpringBootApplicationConfigurationType">
-          <value>
-            <map>
-              <entry key="Unnamed" value="FAILED" />
-            </map>
-          </value>
-        </entry>
-      </map>
     </option>
   </component>
   <component name="RunManager" selected="Spring Boot.Unnamed">
@@ -327,6 +309,15 @@
       <workItem from="1762722348027" duration="1475000" />
       <workItem from="1762808102816" duration="328000" />
     </task>
+    <task id="LOCAL-00001" summary="task: modified the gitignore file to avoid conflicts coming from workspace.xml">
+      <option name="closed" value="true" />
+      <created>1763061877283</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1763061877283</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -342,5 +333,9 @@
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="task: modified the gitignore file to avoid conflicts coming from workspace.xml" />
+    <option name="LAST_COMMIT_MESSAGE" value="task: modified the gitignore file to avoid conflicts coming from workspace.xml" />
   </component>
 </project>
