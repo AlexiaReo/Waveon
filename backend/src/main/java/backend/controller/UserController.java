@@ -20,6 +20,9 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<UserDTO> createUser(@RequestBody UserDTO dto) {
+        if (dto.username() == null || dto.username().isBlank()) {
+            return ResponseEntity.badRequest().body(null);
+        }
         return ResponseEntity.ok(userService.createUser(dto));
     }
 

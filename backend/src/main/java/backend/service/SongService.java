@@ -1,77 +1,89 @@
 package backend.service;
 
+import backend.dto.SongDTO;
+import backend.mapper.SongMapper;
+import backend.model.Artist;
 import backend.model.Song;
-import backend.repository.SongRepository;
+import backend.repository.DBArtistRepository;
+import backend.repository.DBSongRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class SongService {
 
-    private final SongRepository songRepository;
+    private final DBSongRepository songRepository;
+    private final SongMapper songMapper;
+    private final DBArtistRepository artistRepository;
 
-    public SongService(SongRepository songRepository) {
+    public SongService(DBSongRepository songRepository, SongMapper songMapper, DBArtistRepository artistRepository) {
+
         this.songRepository = songRepository;
+        this.songMapper = songMapper;
+        this.artistRepository = artistRepository;
     }
 
-    public Song createSong(Song song) {
+    public SongDTO createSong(SongDTO dto) {
+        Song song = songMapper.toEntity(dto);
 
-        song.setId(null);
-        return songRepository.save(song);
-    }
-
-
-    public Song getSongById(Long id) {
-        if (songRepository.findById(id) == null) {
-            return null;
+        if (dto.name() == null || dto.name().isBlank()) {
+            throw new IllegalArgumentException("Song name is required");
         }
-        return songRepository.findById(id);
+        Artist artist = artistRepository.findById(dto.artist().id())
+                .orElseThrow(() -> new RuntimeException("Artist not found with id: " + dto.artist().id()));
+        song.setArtist(artist);
+        song.setName(dto.name());
+        song.setGenre(dto.genre());
+        Song saved = songRepository.save(song);
+
+        return songMapper.toDTO(saved);
     }
 
-    public List<Song> getAllSongs() {
-        return new ArrayList<>(songRepository.findAll());
+
+    public SongDTO getSongById(Long id) {
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Song not found with id: " + id));
+        return songMapper.toDTO(song);
+    }
+
+    public List<SongDTO> getAllSongs() {
+        return songRepository.findAll()
+                .stream()
+                .map(songMapper::toDTO)
+                .collect(Collectors.toList());
     }
 
 
-    public Song updateSong(Long id, Song updatedSong) {
-        Song existingSong = songRepository.findById(id);
-        if (existingSong != null) {
+    public SongDTO updateSong(Long id, SongDTO dto) {
+        Song existing = songRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Song not found with id: " + id));
 
-            existingSong.setName(updatedSong.getName());
-            existingSong.setArtistId(updatedSong.getArtistId());
+        existing.setName(dto.name());
+        existing.setGenre(dto.genre());
 
-            if (updatedSong.getGenre() != null) {
-                existingSong.setGenre(updatedSong.getGenre());
-            }
-
-            updatedSong.setId(id);
-            return songRepository.save(updatedSong);
-        }
-        return null;
-    }
-
-    public boolean deleteSong(Long id) {
-        if (songRepository.findById(id) != null) {
-            songRepository.deleteById(id);
-            return true;
-        }
-        return false;
-    }
-
-    public List<Song> getSongsByName(String name) {
-        List<Song> allSongs = new ArrayList<>(songRepository.findAll());
-
-        if (name == null || name.trim().isEmpty()) {
-            return allSongs;
+        if (!existing.getArtist().getId().equals(dto.artist().id())) {
+            Artist artist = artistRepository.findById(dto.artist().id())
+                    .orElseThrow(() -> new RuntimeException("Artist not found with id: " + dto.artist().id()));
+            existing.setArtist(artist);
         }
 
-        String lower = name.toLowerCase();
-
-        return allSongs.stream()
-                .filter(song -> song.getName() != null && song.getName().toLowerCase().contains(lower))
-                .toList();
+        Song saved = songRepository.save(existing);
+        return songMapper.toDTO(saved);
     }
 
+    public void deleteSong(Long id) {
+        Song song = songRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Song not found with id: " + id));
+        songRepository.deleteById(id);
+    }
+
+    public List<SongDTO> getSongsByName(String name) {
+        return songRepository.findAll()
+                .stream()
+                .filter(song -> song.getName() != null && song.getName().toLowerCase().contains(name.toLowerCase()))
+                .map(songMapper::toDTO)
+                .collect(Collectors.toList());
+    }
 }

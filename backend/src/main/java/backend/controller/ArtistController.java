@@ -1,7 +1,6 @@
 package backend.controller;
 
 import backend.dto.ArtistDTO;
-import backend.mapper.ArtistMapper;
 import backend.service.ArtistService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -12,15 +11,16 @@ import java.util.List;
 public class ArtistController {
 
     private final ArtistService artistService;
-    private final ArtistMapper artistMapper;
 
-    public ArtistController(ArtistService artistService, ArtistMapper artistMapper) {
+    public ArtistController(ArtistService artistService) {
         this.artistService = artistService;
-        this.artistMapper = artistMapper;
     }
 
     @PostMapping
     public ResponseEntity<ArtistDTO> createArtist(@RequestBody ArtistDTO artistDto) {
+        if (artistDto.name() == null || artistDto.name().isBlank()) {
+            return ResponseEntity.badRequest().body(null);
+        }
         ArtistDTO created = artistService.createArtist(artistDto);
         return ResponseEntity.ok(created);
     }

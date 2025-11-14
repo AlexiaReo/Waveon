@@ -3,7 +3,9 @@ package backend.service;
 import backend.dto.PlaylistDTO;
 import backend.mapper.PlaylistMapper;
 import backend.model.Playlist;
-import backend.repository.PlaylistRepository;
+import backend.model.User;
+import backend.repository.DBPlaylistRepository;
+import backend.repository.DBUserRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,35 +13,57 @@ import java.util.stream.Collectors;
 @Service
 public class PlaylistService {
 
-    private final PlaylistRepository playlistRepository;
+    private final DBPlaylistRepository playlistRepository;
     private final PlaylistMapper playlistMapper;
+    private final DBUserRepository userRepository;
 
-    public PlaylistService(PlaylistRepository playlistRepository, PlaylistMapper playlistMapper) {
+    public PlaylistService(DBPlaylistRepository playlistRepository, PlaylistMapper playlistMapper, DBUserRepository userRepository) {
         this.playlistRepository = playlistRepository;
         this.playlistMapper = playlistMapper;
+        this.userRepository = userRepository;
     }
 
     public PlaylistDTO createPlaylist(PlaylistDTO dto) {
         Playlist playlist = playlistMapper.toEntity(dto);
-        return playlistMapper.toDto(playlistRepository.save(playlist));
+        if (dto.user_id() == null) {
+            throw new IllegalArgumentException("user_id cannot be null");
+        }
+        User user = userRepository.findById(dto.user_id())
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + dto.user_id()));
+        playlist.setUser(user);
+        Playlist saved = playlistRepository.save(playlist);
+        return playlistMapper.toDto(saved);
     }
 
     public List<PlaylistDTO> getAllPlaylists() {
-        return playlistRepository.findAll().stream()
+        return playlistRepository.findAll()
+                .stream()
                 .map(playlistMapper::toDto)
                 .collect(Collectors.toList());
     }
 
     public PlaylistDTO getPlaylistById(Long id) {
-        return playlistRepository.findById(id)
-                .map(playlistMapper::toDto)
+        Playlist playlist = playlistRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Playlist not found with id: " + id));
+        return playlistMapper.toDto(playlist);
     }
 
     public PlaylistDTO updatePlaylist(Long id, PlaylistDTO dto) {
-        Playlist updated = playlistMapper.toEntity(dto);
-        updated.setId(id);
-        return playlistMapper.toDto(playlistRepository.save(updated));
+        Playlist existing = playlistRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Playlist not found with id: " + id));
+
+        existing.setTitle(dto.title());
+        existing.setDescription(dto.description());
+        existing.setVisibility(dto.visibility());
+
+        if (!existing.getUser().getId().equals(dto.user_id())) {
+            User user = userRepository.findById(dto.user_id())
+                    .orElseThrow(() -> new RuntimeException("User not found with id: " + dto.user_id()));
+            existing.setUser(user);
+        }
+
+        Playlist saved = playlistRepository.save(existing);
+        return playlistMapper.toDto(saved);
     }
 
     public void deletePlaylist(Long id) {
