@@ -4,7 +4,6 @@ import backend.dto.UserDTO;
 import backend.mapper.UserMapper;
 import backend.model.User;
 import backend.repository.DBUserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -22,8 +21,12 @@ public class UserService {
     }
 
     public UserDTO createUser(UserDTO dto) {
+        if (dto.username() == null || dto.username().isBlank()) {
+            throw new IllegalArgumentException("Username is required");
+        }
         User user = userMapper.toEntity(dto);
-        return userMapper.toDto(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        return userMapper.toDto(savedUser);
     }
 
     public List<UserDTO> getAllUsers() {
@@ -40,12 +43,13 @@ public class UserService {
     }
 
     public UserDTO updateUser(Long id, UserDTO dto) {
-        if (!userRepository.existsById(id)) {
-            throw new NoSuchElementException("User not found");
-        }
-        User updated = userMapper.toEntity(dto);
-        updated.setId(id);
-        return userMapper.toDto(userRepository.save(updated));
+        User existing = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        existing.setUsername(dto.username());
+
+        User saved = userRepository.save(existing);
+        return userMapper.toDto(saved);
     }
 
     public void deleteUser(Long id) {

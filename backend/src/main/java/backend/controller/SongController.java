@@ -1,5 +1,6 @@
 package backend.controller;
 
+import backend.dto.SongDTO;
 import backend.model.Song;
 import backend.service.SongService;
 import org.springframework.http.HttpStatus;
@@ -19,29 +20,24 @@ public class SongController {
     }
 
     @PostMapping
-    public ResponseEntity<Song> createSong(@RequestBody Song song) {
-        Song newSong = songService.createSong(song);
-        return new ResponseEntity<>(newSong, HttpStatus.CREATED);
+    public ResponseEntity<SongDTO> createSong(@RequestBody SongDTO song) {
+        return ResponseEntity.ok(songService.createSong(song));
     }
 
     @GetMapping
-    public ResponseEntity<List<Song>> getSongs(
-            @RequestParam(required = false) String name) {
-
-        List<Song> songs;
-
+    public ResponseEntity<List<SongDTO>> getSongs(@RequestParam(required = false) String name) {
+        List<SongDTO> songs;
         if (name != null && !name.trim().isEmpty()) {
             songs = songService.getSongsByName(name);
         } else {
             songs = songService.getAllSongs();
         }
-
         return ResponseEntity.ok(songs);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Song> getSongById(@PathVariable Long id) {
-        Song song = songService.getSongById(id);
+    public ResponseEntity<SongDTO> getSongById(@PathVariable Long id) {
+        SongDTO song = songService.getSongById(id);
         if (song != null) {
             return ResponseEntity.ok(song);
         } else {
@@ -50,11 +46,11 @@ public class SongController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Song> updateSong(
+    public ResponseEntity<SongDTO> updateSong(
             @PathVariable Long id,
-            @RequestBody Song songDetails) {
+            @RequestBody SongDTO songDetails) {
 
-        Song updatedSong = songService.updateSong(id, songDetails);
+        SongDTO updatedSong = songService.updateSong(id, songDetails);
 
         if (updatedSong != null) {
             return ResponseEntity.ok(updatedSong);
@@ -65,10 +61,7 @@ public class SongController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
-        if (songService.deleteSong(id)) {
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        songService.deleteSong(id);
+        return ResponseEntity.noContent().build();
     }
 }

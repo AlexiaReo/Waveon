@@ -1,38 +1,43 @@
 package backend.model;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@Entity
+@Table(name = "artists")
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class Artist {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(columnDefinition = "serial")
     private Long id;
+
+    @Setter
+    @Column(nullable = false)
     private String name;
+
+    @Setter
     private Long followers;
 
-    public Artist(Long id, String name, Long followers) {
-        this.id = id;
-        this.name = name;
-        this.followers = followers;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public Long getFollowers() {
-        return followers;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setFollowers(Long followers) {
-        this.followers = followers;
-    }
+    @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Song> songs = new ArrayList<>();
 }

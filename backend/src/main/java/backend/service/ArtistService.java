@@ -3,7 +3,7 @@ package backend.service;
 import backend.dto.ArtistDTO;
 import backend.mapper.ArtistMapper;
 import backend.model.Artist;
-import backend.repository.ArtistRepository;
+import backend.repository.DBArtistRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,10 +11,10 @@ import java.util.stream.Collectors;
 @Service
 public class ArtistService {
 
-    private final ArtistRepository artistRepository;
+    private final DBArtistRepository artistRepository;
     private final ArtistMapper artistMapper;
 
-    public ArtistService(ArtistRepository artistRepository, ArtistMapper artistMapper) {
+    public ArtistService(DBArtistRepository artistRepository, ArtistMapper artistMapper) {
         this.artistRepository = artistRepository;
         this.artistMapper = artistMapper;
     }
@@ -26,9 +26,9 @@ public class ArtistService {
     }
 
     public ArtistDTO getArtistById(Long id) {
-        return artistRepository.findById(id)
-                .map(artistMapper::toDto)
-                .orElse(null);
+        Artist artist = artistRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Artist not found"));
+        return artistMapper.toDto(artist);
     }
 
     public List<ArtistDTO> getAllArtists() {
@@ -39,11 +39,13 @@ public class ArtistService {
     }
 
     public ArtistDTO updateArtist(Long id, ArtistDTO dto) {
-        Artist existing = artistRepository.findById(id).orElse(null);
-        if (existing == null) return null;
-        Artist updated = artistMapper.toEntity(dto);
-        updated.setId(id);
-        return artistMapper.toDto(artistRepository.save(updated));
+        Artist existing = artistRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Artist not found with id: " + id));
+        existing.setName(dto.name());
+        existing.setFollowers(dto.followers());
+
+        Artist saved = artistRepository.save(existing);
+        return artistMapper.toDto(saved);
     }
 
     public void deleteArtist(Long id) {

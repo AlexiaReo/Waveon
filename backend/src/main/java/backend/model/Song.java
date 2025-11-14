@@ -1,50 +1,45 @@
 package backend.model;
 
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Entity
+@Table(name = "songs")
+@NoArgsConstructor
+@AllArgsConstructor
+@Getter
 public class Song {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(columnDefinition = "serial")
     private Long id;
+
+    @Setter
+    @Column(nullable = false)
     private String name;
-    private Long artistId; // Association to an artist
+
+    @Setter
+    @ManyToOne
+    @JoinColumn(name = "artist_id",nullable = false)
+    private Artist artist;
+
+    @Enumerated(EnumType.STRING)
+    @Setter
     private Genre genre;
 
-    // constructor
-    public Song(Long id, String name, Long artistId, Genre genre) {
-        this.id = id;
-        this.name = name;
-        this.artistId = artistId;
-        this.genre = genre;
-    }
 
-    // getters and setters
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Long getArtistId() {
-        return artistId;
-    }
-
-    public void setArtistId(Long artistId) {
-        this.artistId = artistId;
-    }
-
-    public Genre getGenre() {
-        return genre;
-    }
-
-    public void setGenre(Genre genre) {
-        this.genre = genre;
-    }
 }
