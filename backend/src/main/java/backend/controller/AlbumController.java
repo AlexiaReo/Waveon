@@ -3,6 +3,7 @@ package backend.controller;
 import backend.model.Album;
 import backend.service.AlbumService;
 
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,6 +18,7 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/albums")
+@CrossOrigin("*")
 public class AlbumController {
 
     private final AlbumService albumService;
