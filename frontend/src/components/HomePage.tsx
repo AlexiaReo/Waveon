@@ -20,8 +20,11 @@ interface Song {
     id: number;
     name: string;
     artist: Artist;
-    duration: string;
-    image: string;
+    //duration: string;
+    //image: string;
+
+    audioUrl: string;
+
 }
 
 // const playlists: Playlist[] = [
@@ -166,7 +169,7 @@ export const HomePage: React.FC = () => {
                             >
                                 <div className="flex items-center space-x-4">
                                     <img
-                                        src={song.image}
+                                        //src={song.image}
                                         alt={song.name}
                                         className="w-16 h-16 rounded-lg object-cover"
                                     />
@@ -175,7 +178,7 @@ export const HomePage: React.FC = () => {
                                         <p className="text-gray-400 text-sm">{song.artist.name}</p>
                                     </div>
                                 </div>
-                                <span className="text-gray-400">{song.duration}</span>
+                                {/*<span className="text-gray-400">{song.duration}</span>*/}
                             </div>
                         ))}
                     </div>
