@@ -1,9 +1,9 @@
-import React, { useState, type ChangeEvent, useEffect } from "react";
+import React, { useState, type ChangeEvent, useEffect, useRef } from "react";
 import { Button } from "primereact/button";
 import { Sidebar } from "primereact/sidebar";
 import { InputText } from "primereact/inputtext";
 import { Toolbar } from "primereact/toolbar";
-import { AudioPlayer } from "./AudioPlayer";
+
 
 interface Playlist {
     id: number;
@@ -58,6 +58,11 @@ export const HomePage: React.FC = () => {
     const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
 
     const [currentSong, setCurrentSong] = useState<Song | null>(null);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const [currentTime, setCurrentTime] = useState<number>(0);
+    const [duration, setDuration] = useState<number>(0);
+
+    const audioRef = useRef<HTMLAudioElement>(null);
 
 
     useEffect(() => {
@@ -88,6 +93,44 @@ export const HomePage: React.FC = () => {
                 song.name.toLowerCase().includes(value.toLowerCase())
             );
             setFilteredSongs(filtered);
+        }
+    };
+
+    //play pause button
+    const handlePlayClick = (song: Song) => {
+        if (currentSong?.id === song.id) {
+            // toggle pause / play
+            if (isPlaying) {
+                audioRef.current?.pause();
+                setIsPlaying(false);
+            } else {
+                audioRef.current?.play();
+                setIsPlaying(true);
+            }
+            return;
+        }
+
+        // new song → set & play immediately
+        setCurrentSong(song);
+        setTimeout(() => {
+            audioRef.current?.play();
+            setIsPlaying(true);
+        }, 100);
+    };
+    
+    //player bar
+    const updateProgress = () => {
+        if (audioRef.current) {
+            setCurrentTime(audioRef.current.currentTime);
+            setDuration(audioRef.current.duration || 0);
+        }
+    };
+
+    const handleSeek = (e: ChangeEvent<HTMLInputElement>) => {
+        const newTime = Number(e.target.value);
+        if (audioRef.current) {
+            audioRef.current.currentTime = newTime;
+            setCurrentTime(newTime);
         }
     };
 
@@ -128,83 +171,119 @@ export const HomePage: React.FC = () => {
 
     return (
         <div className="bg-gray-900 text-white h-screen flex flex-col">
-            {/* Toolbar */}
-            <Toolbar
-                left={leftContents}
-                center={centerContents}
-                right={rightContents}
-                className="bg-gray-800 border-none shadow-2xl sticky z-30" />
 
-            {/* Sidebar */}
-            <Sidebar
-                visible={visible}
-                onHide={() => setVisible(false)}
-                className="bg-gray-850 text-white w-64"
-                showCloseIcon={false}
-            >
+            {/* NAV / TOOLBAR */}
+            <Toolbar left={leftContents} center={centerContents} right={rightContents}
+                     className="bg-gray-800 border-none shadow-2xl sticky z-30" />
+
+            {/* SIDEBAR */}
+            <Sidebar visible={visible} onHide={() => setVisible(false)}
+                     className="bg-gray-850 text-white w-64" showCloseIcon={false}>
                 <h3 className="mb-4 text-lg font-semibold">Your Playlists</h3>
-                <div className="space-y-3 overflow-visible">
+
+                <div className="space-y-3">
                     {playlists.map((p) => (
-                        <div
-                            key={p.id}
-                            className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 hover:shadow-lg cursor-pointer transition-all"
-                        >
-                            <img
-                                src={p.image}
-                                alt={p.title}
-                                className="w-16 h-16 rounded-md object-cover"
-                            />
+                        <div key={p.id}
+                             className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 cursor-pointer transition-all">
+                            <img src={p.image} alt={p.title} className="w-16 h-16 rounded-md object-cover" />
                             <span>{p.title}</span>
                         </div>
                     ))}
                 </div>
             </Sidebar>
 
-            {/* Main Content */}
+            {/* MAIN CONTENT */}
             <main className="flex-1 flex flex-col items-center justify-start py-8 px-4">
                 <div className="w-full max-w-3xl">
                     <h2 className="text-2xl font-semibold mb-6 text-center">Your Songs</h2>
 
                     <div className="space-y-4">
                         {filteredSongs.map((song) => (
-                            <div
-                                key={song.id}
-                                className="cursor-pointer flex items-center justify-between bg-gray-800 rounded-2xl p-4 hover:bg-gray-700 hover:shadow-lg transition-all"
-                            >
+                            <div key={song.id}
+                                 className="flex items-center justify-between bg-gray-800 rounded-2xl p-4 hover:bg-gray-700 transition">
+
                                 <div className="flex items-center space-x-4">
-                                    <img
-                                        //src={song.image}
-                                        alt={song.name}
-                                        className="w-16 h-16 rounded-lg object-cover"
-                                    />
+                                    {/*<img src={song.image} alt={song.name}
+                                         className="w-16 h-16 rounded-lg object-cover" />*/}
+
                                     <div>
                                         <p className="font-semibold text-lg">{song.name}</p>
                                         <p className="text-gray-400 text-sm">{song.artist.name}</p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center space-x-4">
-                                    {/*<span className="text-gray-400">{song.duration}</span>*/}
-
-                                    <Button
-                                        icon="pi pi-play"
-                                        className="p-button-rounded p-button-text text-green-400"
-                                        onClick={() => setCurrentSong(song)}
-                                    />
-                                </div>
+                                <button
+                                    onClick={() => handlePlayClick(song)}
+                                    className="text-white hover:text-green-400 text-2xl"
+                                >
+                                    {currentSong?.id === song.id && isPlaying ? "❚❚" : "▶"}
+                                </button>
                             </div>
                         ))}
                     </div>
                 </div>
             </main>
+
+            {/* PLAYER BAR */}
             {currentSong && (
-                <div className="bg-gray-800 p-4 shadow-xl border-t border-gray-700">
-                    <p className="text-center text-gray-300 mb-2">
-                        Now Playing: <strong>{currentSong.name}</strong> — {currentSong.artist.name}
-                    </p>
-                    <AudioPlayer url={currentSong.audioUrl} />
+                <div className="fixed bottom-0 left-0 right-0 bg-gray-850 border-t border-gray-700 px-6 py-4 
+                                flex items-center justify-between shadow-2xl">
+
+                    {/* LEFT: Song info */}
+                    <div className="flex items-center space-x-4">
+                        {/*<img src={currentSong.image} className="h-14 w-14 rounded-md shadow-lg object-cover" />*/}
+                        <div>
+                            <p className="font-semibold text-white">{currentSong.name}</p>
+                            <p className="text-gray-400 text-sm">{currentSong.artist.name}</p>
+                        </div>
+                    </div>
+
+                    {/* CENTER: Controls + progress */}
+                    <div className="flex flex-col items-center w-1/3">
+                        <button
+                            onClick={() => {
+                                if (isPlaying) {
+                                    audioRef.current?.pause();
+                                    setIsPlaying(false);
+                                } else {
+                                    audioRef.current?.play();
+                                    setIsPlaying(true);
+                                }
+                            }}
+                            className="text-white text-3xl hover:text-green-400 transition mb-2"
+                        >
+                            {isPlaying ? "❚❚" : "▶"}
+                        </button>
+
+                        {/* Progress bar */}
+                        <div className="w-full flex items-center space-x-2">
+                            <span className="text-xs text-gray-400">
+                                {Math.floor(currentTime / 60)}:{String(Math.floor(currentTime % 60)).padStart(2, '0')}
+                            </span>
+
+                            <input type="range" className="w-full h-1 bg-gray-600 rounded-lg"
+                                   min={0} max={duration} value={currentTime} onChange={handleSeek} />
+
+                            <span className="text-xs text-gray-400">
+                                {Math.floor(duration / 60)}:{String(Math.floor(duration % 60)).padStart(2, '0')}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* RIGHT: Volume */}
+                    <div className="flex items-center space-x-3">
+                        <i className="pi pi-volume-down text-white"></i>
+                        <input type="range" min="0" max="1" step="0.01" className="w-24"
+                               onChange={(e) => {
+                                   if (audioRef.current) audioRef.current.volume = Number(e.target.value);
+                               }} />
+                    </div>
+
+                    {/* HIDDEN AUDIO ELEMENT */}
+                    <audio ref={audioRef} src={currentSong.audioUrl} onTimeUpdate={updateProgress} />
                 </div>
             )}
+
         </div>
     );
 };
