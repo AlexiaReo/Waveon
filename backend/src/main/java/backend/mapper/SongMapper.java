@@ -10,11 +10,15 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface SongMapper {
     @Mapping(source = "artist", target = "artist")
+    @Mapping(source = "audioUrl", target = "audioUrl")
     SongDTO toDTO(Song song);
 
     @Mapping(source = "artist", target = "artist")
+    @Mapping(source = "audioUrl", target = "audioUrl")
     Song toEntity(SongDTO dto);
 
     ArtistDTO toDTO(Artist artist);
+
     Artist toEntity(ArtistDTO dto);
+
 }
