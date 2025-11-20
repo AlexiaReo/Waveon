@@ -1,8 +1,9 @@
-import React,{useState,type ChangeEvent, useEffect} from "react";
-import {Button} from "primereact/button";
-import {Sidebar} from "primereact/sidebar";
-import {InputText} from "primereact/inputtext";
-import {Toolbar} from "primereact/toolbar";
+import React, { useState, type ChangeEvent, useEffect } from "react";
+import { Button } from "primereact/button";
+import { Sidebar } from "primereact/sidebar";
+import { InputText } from "primereact/inputtext";
+import { Toolbar } from "primereact/toolbar";
+import { AudioPlayer } from "./AudioPlayer";
 
 interface Playlist {
     id: number;
@@ -56,6 +57,9 @@ export const HomePage: React.FC = () => {
     const [songs, setSongs] = useState<Song[]>([]);
     const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
 
+    const [currentSong, setCurrentSong] = useState<Song | null>(null);
+
+
     useEffect(() => {
         fetch("http://localhost:8080/api/playlists")
             .then(res => res.json())
@@ -101,13 +105,13 @@ export const HomePage: React.FC = () => {
 
     const centerContents = (
         <div className="flex items-center space-x-2 p-input-icon-left">
-            <i className="pi pi-search ml-2 mr-1 text-gray-200"/>
+            <i className="pi pi-search ml-2 mr-1 text-gray-200" />
             <InputText
                 value={search}
                 onChange={handleSearchChange}
                 placeholder="Search song or artist"
                 className="pl-5 pr-2 py-2"
-                style={{width: "230x"}}
+                style={{ width: "230x" }}
             />
         </div>
     );
@@ -120,6 +124,7 @@ export const HomePage: React.FC = () => {
             />
         </div>
     );
+
 
     return (
         <div className="bg-gray-900 text-white h-screen flex flex-col">
@@ -141,7 +146,7 @@ export const HomePage: React.FC = () => {
                 <div className="space-y-3 overflow-visible">
                     {playlists.map((p) => (
                         <div
-                            key={p.id }
+                            key={p.id}
                             className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 hover:shadow-lg cursor-pointer transition-all"
                         >
                             <img
@@ -163,9 +168,8 @@ export const HomePage: React.FC = () => {
                     <div className="space-y-4">
                         {filteredSongs.map((song) => (
                             <div
-                                key={song.id }
-
-                                className="flex items-center justify-between bg-gray-800 rounded-2xl p-4 hover:bg-gray-700 hover:shadow-lg transition-all"
+                                key={song.id}
+                                className="cursor-pointer flex items-center justify-between bg-gray-800 rounded-2xl p-4 hover:bg-gray-700 hover:shadow-lg transition-all"
                             >
                                 <div className="flex items-center space-x-4">
                                     <img
@@ -178,12 +182,29 @@ export const HomePage: React.FC = () => {
                                         <p className="text-gray-400 text-sm">{song.artist.name}</p>
                                     </div>
                                 </div>
-                                {/*<span className="text-gray-400">{song.duration}</span>*/}
+
+                                <div className="flex items-center space-x-4">
+                                    {/*<span className="text-gray-400">{song.duration}</span>*/}
+
+                                    <Button
+                                        icon="pi pi-play"
+                                        className="p-button-rounded p-button-text text-green-400"
+                                        onClick={() => setCurrentSong(song)}
+                                    />
+                                </div>
                             </div>
                         ))}
                     </div>
                 </div>
             </main>
+            {currentSong && (
+                <div className="bg-gray-800 p-4 shadow-xl border-t border-gray-700">
+                    <p className="text-center text-gray-300 mb-2">
+                        Now Playing: <strong>{currentSong.name}</strong> — {currentSong.artist.name}
+                    </p>
+                    <AudioPlayer url={currentSong.audioUrl} />
+                </div>
+            )}
         </div>
     );
 };
