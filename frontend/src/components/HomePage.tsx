@@ -110,7 +110,7 @@ export const HomePage: React.FC = () => {
             return;
         }
 
-        // new song → set & play immediately
+       
         setCurrentSong(song);
         setTimeout(() => {
             audioRef.current?.play();
@@ -172,7 +172,7 @@ export const HomePage: React.FC = () => {
     return (
         <div className="bg-gray-900 text-white h-screen flex flex-col">
 
-            {/* NAV / TOOLBAR */}
+            {/* NAVBAR */}
             <Toolbar left={leftContents} center={centerContents} right={rightContents}
                      className="bg-gray-800 border-none shadow-2xl sticky z-30" />
 
@@ -238,7 +238,7 @@ export const HomePage: React.FC = () => {
                         </div>
                     </div>
 
-                    {/* CENTER: Controls + progress */}
+                    {/*  Controls + progress */}
                     <div className="flex flex-col items-center w-1/3">
                         <button
                             onClick={() => {
