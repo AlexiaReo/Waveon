@@ -41,5 +41,8 @@ public class Song {
     @Setter
     private Genre genre;
 
+    @Setter
+    @Column
+    private String audioUrl;
 
 }
