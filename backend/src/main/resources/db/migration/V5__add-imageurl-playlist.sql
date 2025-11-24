@@ -1,0 +1,2 @@
+ALTER TABLE playlists
+    ADD COLUMN imageUrl VARCHAR(500) NOT NULL;

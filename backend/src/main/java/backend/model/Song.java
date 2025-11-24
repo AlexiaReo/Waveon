@@ -41,5 +41,11 @@ public class Song {
     @Setter
     private Genre genre;
 
+    @Column(name="filepath", nullable = false)
+    @Setter
+    private String filepath;
 
+    @Column(name = "imageurl", nullable = false)
+    @Setter
+    private String imageUrl;
 }
