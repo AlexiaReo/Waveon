@@ -2,6 +2,7 @@ package backend.controller;
 
 import backend.dto.SongDTO;
 import backend.service.SongService;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
@@ -9,6 +10,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -70,7 +72,7 @@ public class SongController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/songs/{id}/stream")
+    @GetMapping("/{id}/stream")
     public ResponseEntity<Resource> streamSong(@PathVariable Long id) {
         SongDTO song = songService.getSongById(id);
 
@@ -78,8 +80,7 @@ public class SongController {
             return ResponseEntity.notFound().build();
         }
 
-        Path path = Paths.get("audio/" + song.filepath());
-        Resource resource = new FileSystemResource(path);
+        ClassPathResource resource = new ClassPathResource("audio/" + song.filepath());
 
         if (!resource.exists()) {
             return ResponseEntity.notFound().build();

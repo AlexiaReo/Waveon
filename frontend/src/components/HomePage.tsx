@@ -35,14 +35,14 @@ export const HomePage: React.FC = () => {
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
     useEffect(() => {
-        fetch("http://localhost:8080/api/playlists")
+        fetch("http://localhost:8081/api/playlists")
             .then(res => res.json())
             .then(data => setPlaylists(data))
             .catch(err => console.error(err));
     }, []);
 
     useEffect(() => {
-        fetch("http://localhost:8080/api/songs")
+        fetch("http://localhost:8081/api/songs")
             .then(res => res.json())
             .then(data => {
                 setSongs(data);
@@ -79,15 +79,21 @@ export const HomePage: React.FC = () => {
 
     const audioRef = useRef<HTMLAudioElement>(null);
 
+    // Set audio only when selecting a new song
+    useEffect(() => {
+        if (audioRef.current && currentSong) {
+            audioRef.current.src = `http://localhost:8081/api/songs/${currentSong.id}/stream`;
+            audioRef.current.play();
+        }
+    }, [currentSong]);
+
+// Handle play/pause toggle
     useEffect(() => {
         if (audioRef.current) {
-            if (isPlaying) {
-                audioRef.current.play();
-            } else {
-                audioRef.current.pause();
-            }
+            if (isPlaying) audioRef.current.play();
+            else audioRef.current.pause();
         }
-    }, [isPlaying, currentSong]);
+    }, [isPlaying]);
 
     const centerContents = (
         <div className="flex items-center space-x-2 p-input-icon-left">
@@ -97,7 +103,7 @@ export const HomePage: React.FC = () => {
                 onChange={handleSearchChange}
                 placeholder="Search song or artist"
                 className="pl-5 pr-2 py-2"
-                style={{width: "230x"}}
+                style={{width: "230px"}}
             />
         </div>
     );
@@ -156,8 +162,10 @@ export const HomePage: React.FC = () => {
                                 key={song.id}
                                 className="flex items-center justify-between bg-gray-800 rounded-2xl p-4 hover:bg-gray-700 hover:shadow-lg transition-all"
                                 onClick={() => {
-                                    setCurrentSong(song);
-                                    setIsPlaying(true);
+                                    if (song && song.id) {
+                                        setCurrentSong(song);
+                                        setIsPlaying(true);
+                                    }
                                 }}
                             >
                                 <div className="flex items-center space-x-4">
@@ -192,15 +200,15 @@ export const HomePage: React.FC = () => {
                     </div>
                     <button
                         onClick={() => setIsPlaying(!isPlaying)}
-                        className="p-2 bg-gray-700 rounded-md"
+                        className="p-2 bg-gray-700 rounded-md text-white"
                     >
-                        {isPlaying ? "Pause" : "Play"}
+                        <i className={`pi ${isPlaying ? "pi-pause" : "pi-play"} text-xl`}/>
                     </button>
                 </div>
             )}
 
             {/* Hidden audio element */}
-            <audio ref={audioRef} src={`http://localhost:8080/api/songs/${currentSong?.id}/stream`} controls/>
+            <audio ref={audioRef} src={`http://localhost:8081/api/songs/${currentSong?.id}/stream`}/>
         </div>
     );
 };
