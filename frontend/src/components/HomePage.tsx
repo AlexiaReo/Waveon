@@ -3,11 +3,12 @@ import {Button} from "primereact/button";
 import {Sidebar} from "primereact/sidebar";
 import {InputText} from "primereact/inputtext";
 import {Toolbar} from "primereact/toolbar";
+import {useRef} from "react";
 
 interface Playlist {
     id: number;
     title: string;
-    image: string;
+    imageUrl: string;
 }
 
 interface Artist {
@@ -20,31 +21,9 @@ interface Song {
     id: number;
     name: string;
     artist: Artist;
-    duration: string;
-    image: string;
+    filepath:string;
+    imageUrl: string;
 }
-
-// const playlists: Playlist[] = [
-//     { id: 1, name: "vibe", image: "https://images.unsplash.com/photo-1719057572864-e61f5204f2ee?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bmlnaHQlMjBhZXN0aGV0aWN8ZW58MHx8MHx8fDA%3D&fm=jpg&q=60&w=3000" },
-//     { id: 2, name: ":)", image: "https://www.rollingstone.com/wp-content/uploads/2023/11/RandB-Illo.jpg?w=1581&h=1054&crop=1" },
-// ];
-//
-// const songs: Song[] = [
-//     {
-//         id: 1,
-//         name: "All I Know",
-//         artist: "The Weeknd, Future",
-//         duration: "5:21",
-//         image: "https://images.genius.com/3e171b6e6f898af35930efd2bd4dba97.970x970x1.png",
-//     },
-//     {
-//         id: 2,
-//         name: "Been 2 Gone",
-//         artist: "Lil Maru",
-//         duration: "3:31",
-//         image: "https://i.scdn.co/image/ab67616d0000b2734e6e07edb5d15d91704b8e69",
-//     },
-// ];
 
 export const HomePage: React.FC = () => {
     const [visible, setVisible] = useState<boolean>(true);
@@ -52,6 +31,8 @@ export const HomePage: React.FC = () => {
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [songs, setSongs] = useState<Song[]>([]);
     const [filteredSongs, setFilteredSongs] = useState<Song[]>([]);
+    const [currentSong, setCurrentSong] = useState<Song | null>(null);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
     useEffect(() => {
         fetch("http://localhost:8080/api/playlists")
@@ -96,6 +77,18 @@ export const HomePage: React.FC = () => {
         </div>
     );
 
+    const audioRef = useRef<HTMLAudioElement>(null);
+
+    useEffect(() => {
+        if (audioRef.current) {
+            if (isPlaying) {
+                audioRef.current.play();
+            } else {
+                audioRef.current.pause();
+            }
+        }
+    }, [isPlaying, currentSong]);
+
     const centerContents = (
         <div className="flex items-center space-x-2 p-input-icon-left">
             <i className="pi pi-search ml-2 mr-1 text-gray-200"/>
@@ -125,7 +118,7 @@ export const HomePage: React.FC = () => {
                 left={leftContents}
                 center={centerContents}
                 right={rightContents}
-                className="bg-gray-800 border-none shadow-2xl sticky z-30" />
+                className="bg-gray-800 border-none shadow-2xl sticky z-30"/>
 
             {/* Sidebar */}
             <Sidebar
@@ -138,11 +131,11 @@ export const HomePage: React.FC = () => {
                 <div className="space-y-3 overflow-visible">
                     {playlists.map((p) => (
                         <div
-                            key={p.id }
+                            key={p.id}
                             className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-700 hover:shadow-lg cursor-pointer transition-all"
                         >
                             <img
-                                src={p.image}
+                                src={p.imageUrl}
                                 alt={p.title}
                                 className="w-16 h-16 rounded-md object-cover"
                             />
@@ -160,13 +153,16 @@ export const HomePage: React.FC = () => {
                     <div className="space-y-4">
                         {filteredSongs.map((song) => (
                             <div
-                                key={song.id }
-
+                                key={song.id}
                                 className="flex items-center justify-between bg-gray-800 rounded-2xl p-4 hover:bg-gray-700 hover:shadow-lg transition-all"
+                                onClick={() => {
+                                    setCurrentSong(song);
+                                    setIsPlaying(true);
+                                }}
                             >
                                 <div className="flex items-center space-x-4">
                                     <img
-                                        src={song.image}
+                                        src={song.imageUrl}
                                         alt={song.name}
                                         className="w-16 h-16 rounded-lg object-cover"
                                     />
@@ -175,12 +171,36 @@ export const HomePage: React.FC = () => {
                                         <p className="text-gray-400 text-sm">{song.artist.name}</p>
                                     </div>
                                 </div>
-                                <span className="text-gray-400">{song.duration}</span>
                             </div>
                         ))}
                     </div>
                 </div>
             </main>
+            {currentSong?.filepath && (
+                <div
+                    className="fixed bottom-4 left-4 right-4 bg-gray-800 p-3 rounded-lg flex items-center justify-between shadow-lg">
+                    <div className="flex items-center space-x-4">
+                        <img
+                            src={currentSong.imageUrl}
+                            alt={currentSong.name}
+                            className="w-12 h-12 rounded-md"
+                        />
+                        <div>
+                            <p className="font-semibold">{currentSong.name}</p>
+                            <p className="text-gray-400 text-sm">{currentSong.artist.name}</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className="p-2 bg-gray-700 rounded-md"
+                    >
+                        {isPlaying ? "Pause" : "Play"}
+                    </button>
+                </div>
+            )}
+
+            {/* Hidden audio element */}
+            <audio ref={audioRef} src={`http://localhost:8080/api/songs/${currentSong?.id}/stream`} controls/>
         </div>
     );
 };

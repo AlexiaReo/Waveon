@@ -8,5 +8,6 @@ public enum Genre {
     CLASSICAL,
     COUNTRY,
     FOLK,
-    REGGAE
+    REGGAE,
+    JAZZ
 }

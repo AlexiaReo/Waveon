@@ -43,7 +43,9 @@ public class Playlist {
     @Setter
     private Privacy visibility;
 
-
+    @Column(name = "imageurl", nullable = false)
+    @Setter
+    private String imageUrl;
 
 }
 
