@@ -1,7 +1,9 @@
 package backend.controller;
 
 import backend.dto.SongDTO;
+import backend.service.SongLikeService;
 import backend.service.SongService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -18,12 +20,22 @@ import java.util.List;
 @RestController
 @RequestMapping("/songs")
 @CrossOrigin("*")
+@RequiredArgsConstructor
 public class SongController {
 
     private final SongService songService;
 
-    public SongController(SongService songService) {
+  /*  public SongController(SongService songService) {
         this.songService = songService;
+    }*/
+
+    private final SongLikeService songLikeService;
+
+    @PostMapping("/{songId}/like")
+    public ResponseEntity<Void> toggleLike(@PathVariable Long songId,
+                                           @RequestParam Long userId) {
+        songLikeService.toggleLike(userId, songId);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping
@@ -89,5 +101,9 @@ public class SongController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
+    }
+    @GetMapping("/like")
+    public ResponseEntity<List<SongDTO>> getLikedSongs(@RequestParam Long userId) {
+        return ResponseEntity.ok(songLikeService.getLikedSongs(userId));
     }
 }
