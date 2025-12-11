@@ -3,8 +3,10 @@ package backend.service;
 import backend.dto.PlaylistDTO;
 import backend.mapper.PlaylistMapper;
 import backend.model.Playlist;
+import backend.model.Song;
 import backend.model.User;
 import backend.repository.DBPlaylistRepository;
+import backend.repository.DBSongRepository;
 import backend.repository.DBUserRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -16,11 +18,13 @@ public class PlaylistService {
     private final DBPlaylistRepository playlistRepository;
     private final PlaylistMapper playlistMapper;
     private final DBUserRepository userRepository;
+    private final DBSongRepository songRepository;
 
-    public PlaylistService(DBPlaylistRepository playlistRepository, PlaylistMapper playlistMapper, DBUserRepository userRepository) {
+    public PlaylistService(DBPlaylistRepository playlistRepository, PlaylistMapper playlistMapper, DBUserRepository userRepository, DBSongRepository songRepository) {
         this.playlistRepository = playlistRepository;
         this.playlistMapper = playlistMapper;
         this.userRepository = userRepository;
+        this.songRepository = songRepository;
     }
 
     public PlaylistDTO createPlaylist(PlaylistDTO dto) {
@@ -56,7 +60,7 @@ public class PlaylistService {
         existing.setDescription(dto.description());
         existing.setVisibility(dto.visibility());
 
-        if (!existing.getUser().getId().equals(dto.user_id())) {
+        if (!existing.getUser().getId().equals(dto.user_id().id())) {
             User user = userRepository.findById(dto.user_id().id())
                     .orElseThrow(() -> new RuntimeException("User not found with id: " + dto.user_id()));
             existing.setUser(user);
@@ -68,5 +72,23 @@ public class PlaylistService {
 
     public void deletePlaylist(Long id) {
         playlistRepository.deleteById(id);
+    }
+
+    public PlaylistDTO addSongToPlaylist(Long playlistId, Long songId) {
+
+        Playlist playlist = playlistRepository.findById(playlistId)
+                .orElseThrow(() -> new RuntimeException("Playlist not found with id: " + playlistId));
+
+        Song song = songRepository.findById(songId)
+                .orElseThrow(() -> new RuntimeException("Song not found with id: " + songId));
+
+
+        if (!playlist.getSongs().contains(song)) {
+            playlist.getSongs().add(song);
+            Playlist saved = playlistRepository.save(playlist);
+            return playlistMapper.toDto(saved);
+        } else {
+            return playlistMapper.toDto(playlist);
+        }
     }
 }
