@@ -24,6 +24,12 @@ public class PlaylistController {
         return new ResponseEntity<>(created, HttpStatus.CREATED);
     }
 
+    @PostMapping("/{playlistId}/songs/{songId}")
+    public ResponseEntity<PlaylistDTO> addSongToPlaylist(@PathVariable Long playlistId, @PathVariable Long songId) {
+        PlaylistDTO updatedPlaylist = playlistService.addSongToPlaylist(playlistId, songId);
+        return ResponseEntity.ok(updatedPlaylist);
+    }
+
     @GetMapping
     public ResponseEntity<List<PlaylistDTO>> getAllPlaylists() {
         return ResponseEntity.ok(playlistService.getAllPlaylists());
