@@ -3,8 +3,12 @@ package backend.service;
 import backend.dto.ArtistDTO;
 import backend.mapper.ArtistMapper;
 import backend.model.Artist;
+import backend.model.User;
 import backend.repository.DBArtistRepository;
+import backend.repository.DBUserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -12,10 +16,14 @@ import java.util.stream.Collectors;
 public class ArtistService {
 
     private final DBArtistRepository artistRepository;
+    private final DBUserRepository userRepository;
     private final ArtistMapper artistMapper;
 
-    public ArtistService(DBArtistRepository artistRepository, ArtistMapper artistMapper) {
+    public ArtistService(DBArtistRepository artistRepository,
+                         DBUserRepository userRepository,
+                         ArtistMapper artistMapper) {
         this.artistRepository = artistRepository;
+        this.userRepository = userRepository;
         this.artistMapper = artistMapper;
     }
 
@@ -50,5 +58,43 @@ public class ArtistService {
 
     public void deleteArtist(Long id) {
         artistRepository.deleteById(id);
+    }
+
+    @Transactional
+    public void toggleFollow(Long userId, Long artistId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        Artist artist = artistRepository.findById(artistId)
+                .orElseThrow(() -> new RuntimeException("Artist not found"));
+
+        if (user.getFollowedArtists().contains(artist)) {
+            user.getFollowedArtists().remove(artist); // Unfollow
+        } else {
+            user.getFollowedArtists().add(artist);    // Follow
+        }
+
+        //increase the number of followers in the artist table
+        long currentCount = artist.getFollowers() == null ? 0 : artist.getFollowers();
+        if (user.getFollowedArtists().contains(artist)) {
+            artist.setFollowers(currentCount + 1);
+        } else {
+            artist.setFollowers(Math.max(0, currentCount - 1)); // Prevent negative numbers
+        }
+
+        // save both
+        userRepository.save(user);
+        artistRepository.save(artist);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ArtistDTO> getFollowedArtists(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return user.getFollowedArtists().stream()
+                .map(artistMapper::toDto)
+                .collect(Collectors.toList());
     }
 }

@@ -26,6 +26,17 @@ public class ArtistController {
         return ResponseEntity.ok(created);
     }
 
+    @PostMapping("/{artistId}/follow")
+    public ResponseEntity<Void> toggleFollow(@PathVariable Long artistId,
+                                             @RequestParam Long userId) {
+        artistService.toggleFollow(userId, artistId);
+        return ResponseEntity.ok().build();
+    }
+    @GetMapping("/follow")
+    public ResponseEntity<List<ArtistDTO>> getFollowedArtists(@RequestParam Long userId) {
+        return ResponseEntity.ok(artistService.getFollowedArtists(userId));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<ArtistDTO> getArtistById(@PathVariable Long id) {
         ArtistDTO dto = artistService.getArtistById(id);
