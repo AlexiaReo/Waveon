@@ -3,6 +3,7 @@ package backend.service;
 import backend.dto.SongDTO;
 import backend.mapper.SongMapper;
 import backend.model.Artist;
+import backend.model.Genre;
 import backend.model.Song;
 import backend.repository.DBArtistRepository;
 import backend.repository.DBSongRepository;
@@ -85,5 +86,21 @@ public class SongService {
                 .filter(song -> song.getName() != null && song.getName().toLowerCase().contains(name.toLowerCase()))
                 .map(songMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public List<SongDTO> getSongsByGenre(String genreName) {
+        try {
+
+            Genre genre = Genre.valueOf(genreName.toUpperCase());
+
+            List<Song> songs = songRepository.findByGenre(genre);
+
+            return songs.stream()
+                    .map(songMapper::toDTO)
+                    .collect(Collectors.toList());
+
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid genre: " + genreName);
+        }
     }
 }

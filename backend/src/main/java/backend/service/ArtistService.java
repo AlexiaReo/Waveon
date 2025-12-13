@@ -97,4 +97,22 @@ public class ArtistService {
                 .map(artistMapper::toDto)
                 .collect(Collectors.toList());
     }
+
+    public List<ArtistDTO> getTopArtists(int limit) {
+
+        List<Artist> allArtists = artistRepository.findAll();
+
+
+        return allArtists.stream()
+                // descending order by followers
+                .sorted((a1, a2) -> {
+                    int followers1 = a1.getUserFollowers() != null ? a1.getUserFollowers().size() : 0;
+                    int followers2 = a2.getUserFollowers() != null ? a2.getUserFollowers().size() : 0;
+                    return Integer.compare(followers2, followers1);
+                })
+                // take the first n
+                .limit(limit)
+                .map(artistMapper::toDto)
+                .collect(Collectors.toList());
+    }
 }

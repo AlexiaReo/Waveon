@@ -102,8 +102,16 @@ public class SongController {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(resource);
     }
+
     @GetMapping("/like")
     public ResponseEntity<List<SongDTO>> getLikedSongs(@RequestParam Long userId) {
         return ResponseEntity.ok(songLikeService.getLikedSongs(userId));
     }
+
+    @GetMapping("/genre/{genreName}")
+    public ResponseEntity<List<SongDTO>> getSongsByGenre(@PathVariable String genreName) {
+        List<SongDTO> songs = songService.getSongsByGenre(genreName);
+        return ResponseEntity.ok(songs);
+    }
+
 }

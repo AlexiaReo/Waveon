@@ -48,6 +48,11 @@ public class ArtistController {
         return ResponseEntity.ok(artistService.getAllArtists());
     }
 
+    //GET artists/top (first 5 artists) or GET artists/top?limit=x (first x artists)
+    @GetMapping("/top")
+    public ResponseEntity<List<ArtistDTO>> getTopArtists(@RequestParam(defaultValue = "5") int limit) {
+        return ResponseEntity.ok(artistService.getTopArtists(limit));
+    }
     @PutMapping("/{id}")
     public ResponseEntity<ArtistDTO> updateArtist(@PathVariable Long id, @RequestBody ArtistDTO artistDto) {
         ArtistDTO updated = artistService.updateArtist(id, artistDto);
