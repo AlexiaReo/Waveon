@@ -1,12 +1,11 @@
-
 import 'primereact/resources/themes/md-dark-deeppurple/theme.css';
 import 'primeicons/primeicons.css'; //icons
 import 'primeflex/primeflex.css'; // flex
 import './App.css'
-import {AppLayout} from "./components/AppLayout.tsx";
-import {HomePage} from "./pages/HomePage.tsx";
-import { useState, useEffect} from "react";
-import { LoginPage} from "./pages/LoginPage.tsx";
+import { AppLayout } from "./components/AppLayout.tsx";
+import { HomePage } from "./pages/HomePage.tsx";
+import { useEffect, useState } from "react";
+import { LoginPage } from "./pages/LoginPage.tsx";
 
 
 function App() {
@@ -27,7 +26,8 @@ function App() {
     return (
         <>
             <AppLayout userId={userId}>
-                <HomePage />
+                {/* `HomePage` requires `onToggleLike`, but `AppLayout` will inject the real handler via `cloneElement` */}
+                <HomePage onToggleLike={() => {}} />
             </AppLayout>
         </>
     )
