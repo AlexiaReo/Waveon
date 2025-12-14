@@ -18,7 +18,7 @@ repositories {
     mavenCentral()
 }
 
-dependencies {
+	dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -38,6 +38,10 @@ dependencies {
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
+    // Needed so MapStruct can correctly see Lombok-generated getters/setters
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    compileOnly 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
     // DB
     implementation 'org.postgresql:postgresql'
     implementation 'org.flywaydb:flyway-core'
@@ -47,6 +51,7 @@ dependencies {
     // Tests
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.h2database:h2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 tasks.named('test') {

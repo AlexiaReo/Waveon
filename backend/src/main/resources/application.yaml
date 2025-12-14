@@ -3,7 +3,9 @@ spring:
     name: backend
 
   config:
-    import: "optional:file:env.properties"
+    # Running Gradle tasks from the `backend/` folder means the repo-level `env.properties`
+    # lives one directory up.
+    import: "optional:file:../env.properties"
 
   datasource:
     url: ${DATABASE_URL}
