@@ -1,6 +1,7 @@
 package backend.controller;
 
 import backend.dto.PlaylistDTO;
+import backend.dto.SongDTO;
 import backend.mapper.PlaylistMapper;
 import backend.service.PlaylistService;
 import org.springframework.http.*;
@@ -28,6 +29,11 @@ public class PlaylistController {
     public ResponseEntity<PlaylistDTO> addSongToPlaylist(@PathVariable Long playlistId, @PathVariable Long songId) {
         PlaylistDTO updatedPlaylist = playlistService.addSongToPlaylist(playlistId, songId);
         return ResponseEntity.ok(updatedPlaylist);
+    }
+
+    @GetMapping("/{playlistId}/songs")
+    public ResponseEntity<List<SongDTO>> getPlaylistSongs(@PathVariable Long playlistId) {
+        return ResponseEntity.ok(playlistService.getPlaylistSongs(playlistId));
     }
 
     @GetMapping
