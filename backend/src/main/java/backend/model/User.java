@@ -3,7 +3,6 @@ package backend.model;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -15,7 +14,7 @@ import java.util.List;
 import java.util.Set;
 
 @Entity
-@Table (name = "users")
+@Table(name = "users")
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
@@ -31,6 +30,23 @@ public class User {
     @Column(nullable = false)
     private String username;
 
+    @Setter
+    @Column(nullable = false, unique = true)
+    private String email;
+
+    @Setter
+    @Column(nullable = false)
+    private String password;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id")
+    )
+    @Column(name = "role")
+    @Builder.Default
+    private Set<String> roles = new HashSet<>();
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     @Builder.Default
     private List<Playlist> playlists = new ArrayList<>();
@@ -44,5 +60,4 @@ public class User {
     @ToString.Exclude
     @Builder.Default
     private Set<Artist> followedArtists = new HashSet<>();
-
 }
