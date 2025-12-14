@@ -1,6 +1,7 @@
 package backend.service;
 
 import backend.dto.PlaylistDTO;
+import backend.dto.SongDTO;
 import backend.mapper.PlaylistMapper;
 import backend.model.Playlist;
 import backend.model.Song;
@@ -60,10 +61,26 @@ public class PlaylistService {
         existing.setDescription(dto.description());
         existing.setVisibility(dto.visibility());
 
-        if (!existing.getUser().getId().equals(dto.user_id().id())) {
+        // Update User if changed
+        if (dto.user_id() != null && !existing.getUser().getId().equals(dto.user_id().id())) {
             User user = userRepository.findById(dto.user_id().id())
                     .orElseThrow(() -> new RuntimeException("User not found with id: " + dto.user_id()));
             existing.setUser(user);
+        }
+
+        // ADDED: Update Songs List
+        if (dto.songs() != null) {
+            // Extract IDs from the DTO list
+            List<Long> songIds = dto.songs().stream()
+                    .map(SongDTO::id)
+                    .collect(Collectors.toList());
+
+            // Fetch the actual Song entities
+            List<Song> newSongs = songRepository.findAllById(songIds);
+
+            // Clear and replace
+            existing.getSongs().clear();
+            existing.getSongs().addAll(newSongs);
         }
 
         Playlist saved = playlistRepository.save(existing);

@@ -1,6 +1,7 @@
 package backend.controller;
 
 import backend.dto.UserDTO;
+import backend.dto.UserLibraryDTO;
 import backend.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +36,11 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<UserDTO> getUser(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUser(id));
+    }
+
+    @GetMapping("/{id}/library")
+    public ResponseEntity<UserLibraryDTO> getUserLibrary(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserLibrary(id));
     }
 
     @PutMapping("/{id}")

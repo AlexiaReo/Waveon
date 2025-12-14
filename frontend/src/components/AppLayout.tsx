@@ -1,29 +1,35 @@
 // src/components/AppLayout.tsx
 
 import React, { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
-import type { Song, Playlist, PageContentProps } from '../types';
+import type { Song, Playlist, PageContentProps, UserLibrary } from '../types';
 import { MainSidebar } from './MainSidebar';
 import { TopToolbar } from './TopToolbar';
 import { PlayerBar } from './Playerbar';
+import { LibraryPage } from '../pages/LibraryPage';
+import { PlaylistPage } from '../pages/PlaylistPage';
+import { PlaylistFormPage } from '../pages/PlaylistFormPage';
 import './HomaPage.css';
 
-// REMOVED: handleSongSelect, filteredSongs, songs props which were causing TS6133 errors
 interface AppLayoutProps {
     children: React.ReactNode;
 }
 
-// REMOVED: handleSongSelect, filteredSongs, songs from destructuring
 export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-    // --- STATE MANAGEMENT (Centralized) ---
+    // --- STATE MANAGEMENT ---
     const [visible, setVisible] = useState<boolean>(true);
     const [search, setSearch] = useState<string>("");
 
-    // NOTE: We MUST keep these states for fetching and updating the UI
+    // View Management
+    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist'>('home');
+
+    // Data States
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [allSongs, setAllSongs] = useState<Song[]>([]);
+    const [userLibrary, setUserLibrary] = useState<UserLibrary | null>(null);
+
+    // Player States
     const [currentSong, setCurrentSong] = useState<Song | null>(null);
     const [currentFilteredSongs, setCurrentFilteredSongs] = useState<Song[]>([]);
-
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [progress, setProgress] = useState<number>(0);
     const [currentTime, setCurrentTime] = useState<string>("0:00");
@@ -36,30 +42,41 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     const audioRef = useRef<HTMLAudioElement>(null);
     const mainContentRef = useRef<HTMLDivElement>(null);
 
-    // --- Data Fetching: Playlists ---
-    useEffect(() => {
+    // --- Data Fetching ---
+    const fetchPlaylists = () => {
         fetch("http://localhost:8081/api/playlists")
             .then(res => res.json())
             .then(data => setPlaylists(data))
             .catch(err => console.error("Error fetching playlists:", err));
-    }, []);
+    };
 
-    // --- Data Fetching: Songs ---
     useEffect(() => {
+        fetchPlaylists();
         fetch("http://localhost:8081/api/songs")
             .then(res => res.json())
             .then(data => {
                 setAllSongs(data);
-                setCurrentFilteredSongs(data); // Initially, show all songs
-                if (data.length > 0) {
-                    setCurrentSong(data[0]); // Set the first song from DB as current
+                setCurrentFilteredSongs(data);
+                if (data.length > 0 && !currentSong) {
+                    setCurrentSong(data[0]);
                 }
             })
             .catch(err => console.error("Error fetching songs:", err));
     }, []);
 
+    useEffect(() => {
+        if (currentView === 'library') {
+            fetch("http://localhost:8081/api/users/1/library")
+                .then(res => {
+                    if (!res.ok) throw new Error("Failed to fetch library");
+                    return res.json();
+                })
+                .then(data => setUserLibrary(data))
+                .catch(err => console.error("Error fetching user library:", err));
+        }
+    }, [currentView]);
 
-    // --- Audio Logic (No changes here) ---
+    // --- Audio Logic ---
     const formatTime = (time: number): string => {
         const minutes = Math.floor(time / 60);
         const seconds = Math.floor(time % 60);
@@ -109,24 +126,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
     const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
         if (audioRef.current) {
-            // 1. Get the current duration
             const duration = audioRef.current.duration;
-
-            // **CRITICAL FIX:** Guard against NaN or Infinity duration
-            if (!isFinite(duration) || duration <= 0) {
-                console.warn("Audio duration is not finite (NaN or 0). Cannot seek yet.");
-                return;
-            }
-
+            if (!isFinite(duration) || duration <= 0) return;
             const rect = e.currentTarget.getBoundingClientRect();
-            // Calculate the click position (0.0 to 1.0)
             const clickPosition = (e.clientX - rect.left) / rect.width;
-
-            // Calculate the new time in seconds
-            const newTime = clickPosition * duration;
-
-            // Set the audio element's time
-            audioRef.current.currentTime = newTime;
+            audioRef.current.currentTime = clickPosition * duration;
         }
     };
 
@@ -134,95 +138,148 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         if (audioRef.current) {
             const rect = e.currentTarget.getBoundingClientRect();
             const clickPosition = (e.clientX - rect.left) / rect.width;
-            const newVolume = Math.min(1, Math.max(0, clickPosition));
-            setVolume(newVolume);
+            setVolume(Math.min(1, Math.max(0, clickPosition)));
         }
     };
 
-    // --- Control Handlers ---
     const toggleShuffle = () => setIsShuffling(prev => !prev);
     const toggleRepeat = () => setRepeatMode(prev => (prev === 'off' ? 'all' : prev === 'all' ? 'one' : 'off'));
 
-    // --- Search Handler ---
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setSearch(value);
-
-        const filtered = allSongs.filter(song =>
-            song.name.toLowerCase().includes(value.toLowerCase()) ||
-            song.artist.name.toLowerCase().includes(value.toLowerCase())
-        );
-        setCurrentFilteredSongs(filtered); // Update the queue visible to the user
+        if (currentView === 'home') {
+            const filtered = allSongs.filter(song =>
+                song.name.toLowerCase().includes(value.toLowerCase()) ||
+                song.artist.name.toLowerCase().includes(value.toLowerCase())
+            );
+            setCurrentFilteredSongs(filtered);
+        }
     };
 
-
-    // --- Navigation Handlers (Unchanged) ---
-    const handleNavItemClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        document.querySelectorAll('.custom-nav-item').forEach(i => i.classList.remove('active'));
-        document.querySelectorAll('.custom-playlist-item').forEach(i => i.classList.remove('active-playlist'));
-        e.currentTarget.classList.add('active');
+    // --- Navigation Handlers ---
+    const handleNavigate = (view: 'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist') => {
+        setCurrentView(view);
         setActivePlaylistId(null);
+        if (view === 'home') {
+            setCurrentFilteredSongs(allSongs);
+        }
     };
 
     const handlePlaylistClick = (playlistId: number) => {
-        document.querySelectorAll('.custom-nav-item').forEach(i => i.classList.remove('active'));
-        document.querySelectorAll('.custom-playlist-item').forEach(i => i.classList.remove('active-playlist'));
-        document.getElementById(`playlist-${playlistId}`)?.classList.add('active-playlist');
         setActivePlaylistId(playlistId);
-        // Implement logic to fetch songs for this specific playlist ID and update setCurrentFilteredSongs
+        setCurrentView('playlist');
+
+        const selectedPlaylist = playlists.find(p => p.id === playlistId);
+
+        if (selectedPlaylist && selectedPlaylist.songs) {
+            setCurrentFilteredSongs(selectedPlaylist.songs);
+        } else {
+            setCurrentFilteredSongs([]);
+        }
     };
 
+    const handleOpenCreatePlaylist = () => {
+        setCurrentView('create-playlist');
+        setActivePlaylistId(null);
+    };
 
-    // Inside export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => { ... }
+    // --- CREATE / EDIT / DELETE PLAYLIST LOGIC ---
+    const handleSavePlaylist = async (data: { title: string, description: string, selectedSongIds: number[] }) => {
+        const isEditing = currentView === 'edit-playlist' && activePlaylistId;
 
-// ... (Your other logic and effects) ...
+        const selectedSongs = data.selectedSongIds.map(id => ({ id }));
 
-// --- Effects (REINSTATE THIS CRITICAL BLOCK) ---
+        const playlistData = {
+            title: data.title,
+            description: data.description || (isEditing ? "" : "Created via App"),
+            visibility: "PUBLIC",
+            imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop",
+            user_id: { id: 1 },
+            songs: selectedSongs
+        };
 
-// 1. Effect to handle changing the current song
+        const url = isEditing
+            ? `http://localhost:8081/api/playlists/${activePlaylistId}`
+            : "http://localhost:8081/api/playlists";
+
+        const method = isEditing ? "PUT" : "POST";
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(playlistData)
+            });
+
+            if (response.ok) {
+                const savedPlaylist = await response.json();
+                fetchPlaylists();
+                handlePlaylistClick(savedPlaylist.id);
+            } else {
+                console.error("Failed to save playlist");
+            }
+        } catch (error) {
+            console.error("Error saving playlist:", error);
+        }
+    };
+
+    // ADDED: Delete Playlist Handler
+    const handleDeletePlaylist = async () => {
+        if (!activePlaylistId) return;
+
+        try {
+            const response = await fetch(`http://localhost:8081/api/playlists/${activePlaylistId}`, {
+                method: "DELETE"
+            });
+
+            if (response.ok) {
+                // Update local state
+                setPlaylists(prev => prev.filter(p => p.id !== activePlaylistId));
+                // Navigate home
+                handleNavigate('home');
+            } else {
+                console.error("Failed to delete playlist");
+            }
+        } catch (error) {
+            console.error("Error deleting playlist:", error);
+        }
+    };
+
+    // --- Effects for Audio ---
     useEffect(() => {
         if (audioRef.current && currentSong) {
-            // Set the new stream source
             audioRef.current.src = `http://localhost:8081/api/songs/${currentSong.id}/stream`;
-            audioRef.current.load(); // Request load of new source
-            audioRef.current.play(); // Attempt to play immediately
-            setIsPlaying(true);
+            audioRef.current.load();
+            audioRef.current.play().then(() => setIsPlaying(true)).catch(e => console.error("Play error:", e));
         }
-    }, [currentSong]); // Runs every time currentSong changes
+    }, [currentSong]);
 
-// 2. Effect to handle play/pause toggle
     useEffect(() => {
         if (audioRef.current) {
-            if (isPlaying) audioRef.current.play().catch(e => console.error("Error playing audio:", e));
+            if (isPlaying) audioRef.current.play().catch(e => console.error("Play error:", e));
             else audioRef.current.pause();
         }
-    }, [isPlaying]); // Runs every time isPlaying changes
+    }, [isPlaying]);
 
-// 3. Effect to handle volume
     useEffect(() => {
-        if (audioRef.current) {
-            audioRef.current.volume = volume;
-        }
+        if (audioRef.current) audioRef.current.volume = volume;
     }, [volume]);
 
-
-    // --- RENDER ---
     return (
         <div className="music-platform-wrapper flex min-h-screen">
             <MainSidebar
                 visible={visible}
                 setVisible={setVisible}
                 playlists={playlists}
-                handleNavItemClick={handleNavItemClick}
+                onNavigate={handleNavigate as any}
                 handlePlaylistClick={handlePlaylistClick}
+                onCreatePlaylist={handleOpenCreatePlaylist}
                 activePlaylistId={activePlaylistId}
+                currentView={currentView}
             />
 
-            {/* Main Content Area */}
-            <div
-                className={`custom-main-content ${visible ? 'main-content-pushed' : 'main-content-full'}`}
-                ref={mainContentRef}
-            >
+            <div className={`custom-main-content ${visible ? 'main-content-pushed' : 'main-content-full'}`} ref={mainContentRef}>
                 <TopToolbar
                     search={search}
                     setSearch={setSearch}
@@ -231,29 +288,55 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     setVisible={setVisible}
                 />
 
-                {/* NOTE: We clone the children to inject the song data and selector */}
-                {React.Children.map(children, child => {
-                    if (React.isValidElement(child)) {
-                        // Construct the props object
-                        const injectedProps: PageContentProps = {
-                            songs: allSongs, // Internal state
-                            filteredSongs: currentFilteredSongs, // Internal state
-                            handleSongSelect: (song: Song) => { // Internal logic
-                                setCurrentSong(song);
-                                setIsPlaying(true);
-                                mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                            },
-                        };
-
-                        // Inject the props. We use the 'injectedProps' variable directly.
-                        // TypeScript now successfully matches the call because the type is clear.
-                        return React.cloneElement(child, injectedProps as any); // Use 'as any' as a final escape hatch if strict TS still complains, but passing the variable often resolves it.
-                    }
-                    return child;
-                })}
+                {/* --- Content Switching --- */}
+                {currentView === 'library' ? (
+                    <LibraryPage
+                        library={userLibrary}
+                        onPlaylistClick={handlePlaylistClick}
+                    />
+                ) : currentView === 'playlist' ? (
+                    <PlaylistPage
+                        playlist={playlists.find(p => p.id === activePlaylistId)}
+                        onSongSelect={(song) => {
+                            setCurrentSong(song);
+                            setIsPlaying(true);
+                        }}
+                        onEdit={() => setCurrentView('edit-playlist')}
+                        onDelete={handleDeletePlaylist} // ADDED: Pass delete handler
+                    />
+                ) : (currentView === 'create-playlist' || currentView === 'edit-playlist') ? (
+                    <PlaylistFormPage
+                        songs={allSongs}
+                        onSubmit={handleSavePlaylist}
+                        onCancel={() => {
+                            if (activePlaylistId) handlePlaylistClick(activePlaylistId);
+                            else handleNavigate('home');
+                        }}
+                        initialValues={
+                            currentView === 'edit-playlist' && activePlaylistId
+                                ? playlists.find(p => p.id === activePlaylistId)
+                                : undefined
+                        }
+                    />
+                ) : (
+                    React.Children.map(children, child => {
+                        if (React.isValidElement(child)) {
+                            const injectedProps: PageContentProps = {
+                                songs: allSongs,
+                                filteredSongs: currentFilteredSongs,
+                                handleSongSelect: (song: Song) => {
+                                    setCurrentSong(song);
+                                    setIsPlaying(true);
+                                    mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                                },
+                            };
+                            return React.cloneElement(child, injectedProps as any);
+                        }
+                        return child;
+                    })
+                )}
             </div>
 
-            {/* Audio Element and Player Bar */}
             {currentSong && (
                 <>
                     <PlayerBar

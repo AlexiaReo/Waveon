@@ -13,18 +13,22 @@ interface MainSidebarProps {
     visible: boolean;
     setVisible: (v: boolean) => void;
     playlists: Playlist[];
-    handleNavItemClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+    onNavigate: (view: 'home' | 'library' | 'explore' | 'playlist') => void;
     handlePlaylistClick: (playlistId: number) => void;
+    onCreatePlaylist: () => void; // ADDED: New prop
     activePlaylistId: number | null;
+    currentView: string;
 }
 
 export const MainSidebar: React.FC<MainSidebarProps> = ({
                                                             visible,
                                                             setVisible,
                                                             playlists,
-                                                            handleNavItemClick,
+                                                            onNavigate,
                                                             handlePlaylistClick,
-                                                            activePlaylistId
+                                                            onCreatePlaylist, // Destructure new prop
+                                                            activePlaylistId,
+                                                            currentView
                                                         }) => {
 
     return (
@@ -41,13 +45,22 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
 
             {/* Main Navigation */}
             <nav className="nav-section flex flex-col gap-1">
-                <div className="custom-nav-item active" onClick={handleNavItemClick}>
+                <div
+                    className={`custom-nav-item ${currentView === 'home' && !activePlaylistId ? 'active' : ''}`}
+                    onClick={() => onNavigate('home')}
+                >
                     <HomeOutlinedIcon fontSize="inherit" /> <span>Home</span>
                 </div>
-                <div className="custom-nav-item" onClick={handleNavItemClick}>
+                <div
+                    className={`custom-nav-item ${currentView === 'explore' ? 'active' : ''}`}
+                    onClick={() => onNavigate('explore')}
+                >
                     <ExploreOutlinedIcon fontSize="inherit" /> <span>Explore</span>
                 </div>
-                <div className="custom-nav-item" onClick={handleNavItemClick}>
+                <div
+                    className={`custom-nav-item ${currentView === 'library' ? 'active' : ''}`}
+                    onClick={() => onNavigate('library')}
+                >
                     <LibraryMusicOutlinedIcon fontSize="inherit" /> <span>Your Library</span>
                 </div>
             </nav>
@@ -59,21 +72,22 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                     <div
                         key={p.id}
                         id={`playlist-${p.id}`}
-                        className={`custom-nav-item custom-playlist-item ${activePlaylistId === p.id ? 'active' : ''}`}
+                        className={`custom-nav-item custom-playlist-item ${activePlaylistId === p.id ? 'active-playlist' : ''}`}
                         onClick={() => handlePlaylistClick(p.id)}
                     >
                         <img
                             src={p.imageUrl}
                             alt={p.title}
-                            className="w-6 h-6 rounded object-cover"
-                            style={{ minWidth: '24px', minHeight: '24px' }}
+                            style={{ width: '24px', height: '24px', objectFit: 'cover' }}
+                            className="rounded flex-shrink-0"
                         />
                         <span className="truncate">{p.title}</span>
                     </div>
                 ))}
 
                 {/* Utility Items */}
-                <div className="custom-nav-item mt-2">
+                {/* ADDED: onClick handler */}
+                <div className="custom-nav-item mt-2" onClick={onCreatePlaylist}>
                     <AddBoxOutlinedIcon fontSize="inherit" /> <span>Create Playlist</span>
                 </div>
                 <div className="custom-nav-item">
