@@ -25,7 +25,11 @@ interface Song {
     imageUrl: string;
 }
 
-export const HomePage: React.FC = () => {
+interface HomePageProps {
+    onNavigateProfile: () => void;
+}
+
+export const HomePage: React.FC<HomePageProps> = ({onNavigateProfile}) => {
     const [visible, setVisible] = useState<boolean>(true);
     const [search, setSearch] = useState<string>("");
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -113,6 +117,7 @@ export const HomePage: React.FC = () => {
             <Button
                 icon="pi pi-user"
                 className="p-button-rounded p-button-secondary"
+                onClick={onNavigateProfile}
             />
         </div>
     );
@@ -207,8 +212,10 @@ export const HomePage: React.FC = () => {
                 </div>
             )}
 
-            {/* Hidden audio element */}
-            <audio ref={audioRef} src={`http://localhost:8081/api/songs/${currentSong?.id}/stream`}/>
+            {/* Hidden audio element (render only when a song is selected, to avoid /undefined requests) */}
+            {currentSong?.id && (
+                <audio ref={audioRef} src={`http://localhost:8081/api/songs/${currentSong.id}/stream`} />
+            )}
         </div>
     );
 };

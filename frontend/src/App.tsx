@@ -1,5 +1,7 @@
-
+import {useMemo, useState} from "react";
 import {HomePage} from "./components/HomePage.tsx";
+import {ProfilePage} from "./components/ProfilePage.tsx";
+import {PlaylistPage} from "./components/PlaylistPage.tsx";
 import {PrimeReactProvider} from "primereact/api";
 
 import 'primereact/resources/themes/md-dark-deeppurple/theme.css';
@@ -9,12 +11,37 @@ import './App.css'
 
 
 function App() {
-    // const [count, setCount] = useState(0)
+    const [view, setView] = useState<"home" | "profile" | "playlist">("home");
+    const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
+
+    // Temporary until authentication exists in the app.!!!!!!!
+    const currentUserId = 2;
+
+    const profileUserId = useMemo(() => currentUserId, [currentUserId]);
 
     return (
         <>
             <PrimeReactProvider>
-                <HomePage></HomePage>
+                {view === "home" && (
+                    <HomePage onNavigateProfile={() => setView("profile")} />
+                )}
+                {view === "profile" && (
+                    <ProfilePage
+                        userId={profileUserId}
+                        viewerId={currentUserId}
+                        onBack={() => setView("home")}
+                        onOpenPlaylist={(playlistId) => {
+                            setSelectedPlaylistId(playlistId);
+                            setView("playlist");
+                        }}
+                    />
+                )}
+                {view === "playlist" && selectedPlaylistId != null && (
+                    <PlaylistPage
+                        playlistId={selectedPlaylistId}
+                        onBack={() => setView("profile")}
+                    />
+                )}
             </PrimeReactProvider>
         </>
     )
