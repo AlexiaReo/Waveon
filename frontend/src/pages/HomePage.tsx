@@ -29,7 +29,7 @@ export const HomePage: React.FC<HomePageProps> = ({ songs=[], filteredSongs=[], 
                     <a href="#" className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors">See All</a>
                 </div>
                 <div className="card-grid">
-                    {filteredSongs.slice(0, 6).map((song, index) => (
+                    {filteredSongs.slice(0, 15).map((song, index) => (
                         <MusicCard
                             key={song.id}
                             song={song}
@@ -43,7 +43,7 @@ export const HomePage: React.FC<HomePageProps> = ({ songs=[], filteredSongs=[], 
             {/* Additional Section (Top Pieces) */}
             <section>
                 <div className="section-header flex justify-between items-center mb-6">
-                    <h2 className="text-2xl m-0 font-bold">Top Artists</h2>
+                    <h2 className="text-2xl m-0 font-bold">Top Songs</h2>
                     <a href="#" className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors">See All</a>
                 </div>
                 <div className="card-grid">

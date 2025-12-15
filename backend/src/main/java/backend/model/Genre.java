@@ -9,5 +9,6 @@ public enum Genre {
     COUNTRY,
     FOLK,
     REGGAE,
-    JAZZ
+    JAZZ,
+    REGGAETON
 }
