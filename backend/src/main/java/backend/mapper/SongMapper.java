@@ -12,7 +12,7 @@ public interface SongMapper {
     @Mapping(source = "artist", target = "artist")
     SongDTO toDTO(Song song);
 
-   @Mapping(source = "artist", target = "artist")
+    @Mapping(source = "artist", target = "artist")
     Song toEntity(SongDTO dto);
 
     ArtistDTO toDTO(Artist artist);
