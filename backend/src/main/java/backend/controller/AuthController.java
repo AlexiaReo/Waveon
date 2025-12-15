@@ -56,10 +56,16 @@ public class AuthController {
     public ResponseEntity<Void> register(
             @RequestBody AuthRequest request) {
 
+        String role = request.role();
+
+        if (!"USER".equals(role) && !"ARTIST".equals(role)) {
+            return ResponseEntity.badRequest().build();
+        }
+
         User user = User.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .roles(Set.of("ROLE_USER"))
+                .roles(Set.of("ROLE_" + role))
                 .build();
 
         userRepository.save(user);

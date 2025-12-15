@@ -5,16 +5,13 @@ import backend.service.SongLikeService;
 import backend.service.SongService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize; // ✅ ADDED
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -24,11 +21,6 @@ import java.util.List;
 public class SongController {
 
     private final SongService songService;
-
-  /*  public SongController(SongService songService) {
-        this.songService = songService;
-    }*/
-
     private final SongLikeService songLikeService;
 
     @PostMapping("/{songId}/like")
@@ -38,6 +30,7 @@ public class SongController {
         return ResponseEntity.ok().build();
     }
 
+    @PreAuthorize("hasRole('ARTIST')")
     @PostMapping
     public ResponseEntity<SongDTO> createSong(@RequestBody SongDTO song) {
         return ResponseEntity.ok(songService.createSong(song));
@@ -64,6 +57,7 @@ public class SongController {
         }
     }
 
+    @PreAuthorize("hasRole('ARTIST')")
     @PutMapping("/{id}")
     public ResponseEntity<SongDTO> updateSong(
             @PathVariable Long id,
@@ -78,6 +72,7 @@ public class SongController {
         }
     }
 
+    @PreAuthorize("hasRole('ARTIST')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
         songService.deleteSong(id);
