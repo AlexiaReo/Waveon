@@ -15,3 +15,4 @@ RUN chmod +x gradlew
 RUN ./gradlew build --no-daemon -x test
 
 CMD ["java", "-jar", "build/libs/backend-0.0.1-SNAPSHOT.jar"]
+
