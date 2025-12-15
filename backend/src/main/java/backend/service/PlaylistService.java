@@ -36,6 +36,16 @@ public class PlaylistService {
         User user = userRepository.findById(dto.user_id().id())
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + dto.user_id()));
         playlist.setUser(user);
+
+        if (dto.songs() != null && !dto.songs().isEmpty()) {
+            List<Long> songIds = dto.songs().stream()
+                    .map(SongDTO::id)
+                    .collect(Collectors.toList());
+            List<Song> persistentSongs = songRepository.findAllById(songIds);
+            playlist.getSongs().clear();
+            playlist.getSongs().addAll(persistentSongs);
+        }
+
         Playlist saved = playlistRepository.save(playlist);
         return playlistMapper.toDto(saved);
     }
