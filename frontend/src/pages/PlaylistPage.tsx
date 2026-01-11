@@ -88,7 +88,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
                 <div className="flex flex-col">
                     {playlist.songs.map((song, index) => (
                         <div
-                            key={song.id}
+                            key={`playlist-song-${song.id}`}
                             className="group !grid grid-cols-[auto_1fr] md:!grid-cols-[auto_4fr_3fr_minmax(60px,auto)] gap-4 items-center px-4 py-2 rounded-md hover:bg-[#ffffff1a] cursor-pointer transition-colors"
                             onClick={() => onSongSelect(song)}
                         >

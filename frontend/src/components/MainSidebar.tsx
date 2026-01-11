@@ -18,6 +18,7 @@ interface MainSidebarProps {
     onCreatePlaylist: () => void; // ADDED: New prop
     activePlaylistId: number | null;
     currentView: string;
+    userId?: number;
 }
 
 export const MainSidebar: React.FC<MainSidebarProps> = ({
@@ -28,8 +29,13 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                                                             handlePlaylistClick,
                                                             onCreatePlaylist, // Destructure new prop
                                                             activePlaylistId,
-                                                            currentView
+                                                            currentView,
+                                                            userId
                                                         }) => {
+
+    const userPlaylists = playlists.filter(p => {
+        return p.user_id?.id === userId;
+    });
 
     return (
         <Sidebar
@@ -68,9 +74,9 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
             <h4 className="text-sm font-semibold text-gray-400 mt-4 mb-2">PLAYLISTS</h4>
             <div className="nav-section flex flex-col gap-1">
                 {/* User Playlists */}
-                {playlists.map((p) => (
+                {userPlaylists.map((p) => (
                     <div
-                        key={p.id}
+                        key={`playlist-${p.id}`}
                         id={`playlist-${p.id}`}
                         className={`custom-nav-item custom-playlist-item ${activePlaylistId === p.id ? 'active-playlist' : ''}`}
                         onClick={() => handlePlaylistClick(p.id)}
