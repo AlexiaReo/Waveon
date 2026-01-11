@@ -105,7 +105,7 @@ export const PlaylistFormPage: React.FC<PlaylistFormPageProps> = ({ songs, onSub
                             const isSelected = selectedSongIds.has(song.id);
                             return (
                                 <div
-                                    key={song.id}
+                                    key={`form-song-${song.id}`}
                                     className={`!grid grid-cols-[50px_auto_1fr] md:!grid-cols-[50px_auto_4fr_3fr_minmax(60px,auto)] gap-4 items-center px-4 py-3 hover:bg-[#282828] cursor-pointer transition-colors border-b border-[#282828]/50 ${isSelected ? 'bg-[#ffffff1a]' : ''}`}
                                     onClick={() => toggleSong(song.id)}
                                 >

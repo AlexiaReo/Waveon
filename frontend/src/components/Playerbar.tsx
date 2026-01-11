@@ -65,7 +65,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                 </div>
                 <div className="now-playing-info">
                     <h4 className="m-0 mb-1 text-sm font-semibold truncate" title={currentSong.name}>{currentSong.name}</h4>
-                    <p className="m-0 text-xs text-gray-400 truncate">{currentSong.artist.name}</p>
+                    <p className="m-0 text-xs text-gray-400 truncate">{currentSong.artist?.name}</p>
                 </div>
             </div>
 

@@ -13,7 +13,6 @@ public class JwtService {
 
     private static final String SECRET =
             "change-this-secret-key-to-at-least-32-characters-long";
-    private static final long EXPIRATION = 1000 * 60 * 60; // 1 hour
 
     private SecretKey getKey() {
         return Keys.hmacShaKeyFor(SECRET.getBytes());
@@ -23,7 +22,6 @@ public class JwtService {
         return Jwts.builder()
                 .subject(userDetails.getUsername()) // email
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION))
                 .signWith(getKey())   // ✅ now valid
                 .compact();
     }
@@ -32,7 +30,7 @@ public class JwtService {
         return Jwts.parser()
                 .verifyWith(getKey()) // ✅ now valid
                 .build()
-                .parseSignedClaims(token)
+                .parseClaimsJws(token)
                 .getPayload()
                 .getSubject();
     }

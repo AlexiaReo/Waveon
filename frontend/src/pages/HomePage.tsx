@@ -20,6 +20,7 @@ export const HomePage: React.FC<HomePageProps> = ({ songs=[], filteredSongs=[], 
         { background: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
     ];
 
+
     return (
         <>
             {/* Recently Played / Featured Songs */}
@@ -29,9 +30,9 @@ export const HomePage: React.FC<HomePageProps> = ({ songs=[], filteredSongs=[], 
                     <a href="#" className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors">See All</a>
                 </div>
                 <div className="card-grid">
-                    {filteredSongs.slice(0, 15).map((song, index) => (
+                    {filteredSongs.slice(0, 16).map((song, index) => (
                         <MusicCard
-                            key={song.id}
+                            key={`song-${song.id}`}
                             song={song}
                             onSongSelect={handleSongSelect}
                             gradientStyle={cardGradients[index % cardGradients.length]}
@@ -49,7 +50,7 @@ export const HomePage: React.FC<HomePageProps> = ({ songs=[], filteredSongs=[], 
                 <div className="card-grid">
                     {songs.slice(6, 12).map((song, index) => (
                         <MusicCard
-                            key={song.id}
+                            key={`song-${song.id}`}
                             song={song}
                             onSongSelect={handleSongSelect}
                             gradientStyle={cardGradients[index % cardGradients.length]}

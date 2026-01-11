@@ -46,10 +46,13 @@ public class AuthController {
                         )
                 );
 
-        String token = jwtService.generateToken(
-                (UserDetails) authentication.getPrincipal());
 
-        return ResponseEntity.ok(new AuthResponse(token));
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String token = jwtService.generateToken((UserDetails) authentication.getPrincipal());
+
+        return ResponseEntity.ok(new AuthResponse(token, user.getId()));
     }
 
     @PostMapping("/register")
@@ -65,6 +68,7 @@ public class AuthController {
         User user = User.builder()
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
+                .username(request.username())
                 .roles(Set.of("ROLE_" + role))
                 .build();
 

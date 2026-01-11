@@ -12,13 +12,14 @@ export const MusicCard: React.FC<MusicCardProps> = ({ song, onSongSelect, gradie
     return (
         <div className="music-card" onClick={() => onSongSelect(song)}>
             <div className="card-image" style={gradientStyle}>
-                <img src={song.imageUrl} alt={song.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px' }} />
-                <div className="play-overlay" style={{ fontSize: '24px' }}>
+                <img src={song.imageUrl} alt={song.name}
+                     style={{width: '100%', height: '100%', objectFit: 'cover', borderRadius: '8px'}}/>
+                <div className="play-overlay" style={{fontSize: '24px'}}>
                     ▶
                 </div>
             </div>
             <h3 className="card-title" title={song.name}>{song.name}</h3>
-            <p className="card-subtitle" title={song.artist.name}>{song.artist.name}</p>
+            <p className="card-subtitle" title={song.artist?.name}>{song.artist?.name || "Unknown Artist"}</p>
         </div>
     );
 };

@@ -12,13 +12,18 @@ interface TopToolbarProps {
     handleSearchChange: (e: ChangeEvent<HTMLInputElement>) => void;
     visible: boolean;
     setVisible: (v: boolean) => void;
+    onStudyClick: () => void;
+    studyState: { isActive: boolean; mode: 'STUDY' | 'BREAK'; timeLeft: number };
+    onGiveUp: () => void;
 }
 
 export const TopToolbar: React.FC<TopToolbarProps> = ({
                                                           search,
                                                           handleSearchChange,
                                                           visible,
-                                                          setVisible
+                                                          setVisible,
+                                                          onStudyClick,
+    studyState, onGiveUp
                                                       }) => {
 
     // --- Toolbar Contents ---
@@ -60,11 +65,38 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
     );
 
     const rightContents = (
-        <div className="flex justify-end items-center w-1/3">
-            <div className="user-actions flex gap-4 items-center">
-                <div className="text-white cursor-pointer" style={{position: 'relative'}}>
-                    <Person3Icon fontSize="large"/>
-                </div>
+        <div className="flex justify-end items-center gap-4">
+            {/* Show Give Up button ONLY during BREAK mode */}
+            {studyState.isActive && studyState.mode === 'BREAK' && (
+                <Button
+                    label="Give Up"
+                    severity="danger"
+                    className="p-button-rounded"
+                    style={{
+                        backgroundColor: 'rgb(238,95,51)', // Transparent white background
+                        borderColor: '#ffffff',                      // White contour (border)
+                        color: '#ffffff',                            // White text/icon
+                        backdropFilter: 'blur(4px)'                  // Optional: adds a nice glass effect
+                    }}
+                    onClick={onGiveUp}
+                />
+            )}
+
+            <Button
+                label={studyState.isActive ? "Study Active" : "Study Mode"}
+                icon="pi pi-book"
+                className="p-button-rounded p-button-outlined"
+                onClick={onStudyClick}
+                style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Transparent white background
+                    borderColor: '#ffffff',                      // White contour (border)
+                    color: '#ffffff',                            // White text/icon
+                    backdropFilter: 'blur(4px)'                  // Optional: adds a nice glass effect
+                }}
+                disabled={studyState.isActive} // Disable choice button if mode is running
+            />
+            <div className="user-actions flex items-center">
+                <Person3Icon fontSize="large" className="text-white cursor-pointer" />
             </div>
         </div>
     );
@@ -74,6 +106,7 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
             left={leftContents}
             center={centerContents}
             right={rightContents}
+            style={{ position: 'relative', zIndex: 10000 }}
             className="bg-transparent border-none p-0 mb-8"
         />
     );

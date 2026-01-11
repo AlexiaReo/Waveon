@@ -9,12 +9,16 @@ import { LibraryPage } from '../pages/LibraryPage';
 import { PlaylistPage } from '../pages/PlaylistPage';
 import { PlaylistFormPage } from '../pages/PlaylistFormPage';
 import './HomaPage.css';
+import { authFetch} from "../types/authFetch.ts";
+import {StudyModeOverlay} from "./StudyModeOverlay.tsx"; [StudyModeOverlay];
 
 interface AppLayoutProps {
     children: React.ReactNode;
+    userId?: number;
+
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
     // --- STATE MANAGEMENT ---
     const [visible, setVisible] = useState<boolean>(true);
     const [search, setSearch] = useState<string>("");
@@ -38,35 +42,114 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     const [repeatMode, setRepeatMode] = useState<'off' | 'one' | 'all'>('off');
     const [volume, setVolume] = useState<number>(0.7);
     const [activePlaylistId, setActivePlaylistId] = useState<number | null>(null);
+    const [isStudyOpen, setIsStudyOpen] = useState(false);
 
     const audioRef = useRef<HTMLAudioElement>(null);
     const mainContentRef = useRef<HTMLDivElement>(null);
+    const [studyState, setStudyState] = useState<{
+        isActive: boolean;
+        mode: 'STUDY' | 'BREAK';
+        timeLeft: number;
+        studyDuration: number;
+        breakDuration: number;
+    }>({
+        isActive: false,
+        mode: 'STUDY',
+        timeLeft: 0,
+        studyDuration: 0,
+        breakDuration: 0
+    });
+    useEffect(() => {
+        let timer: any;
+        if (studyState.isActive && studyState.timeLeft > 0) {
+            timer = setInterval(() => {
+                setStudyState(prev => ({ ...prev, timeLeft: prev.timeLeft - 1 }));
+            }, 1000);
+        } else if (studyState.isActive && studyState.timeLeft === 0) {
+            // Switch Modes
+            const newMode = studyState.mode === 'STUDY' ? 'BREAK' : 'STUDY';
+            const newTime = newMode === 'STUDY' ? studyState.studyDuration : studyState.breakDuration;
 
-    // --- Data Fetching ---
-    const fetchPlaylists = () => {
-        fetch("http://localhost:8081/api/playlists")
+            setStudyState(prev => ({ ...prev, mode: newMode, timeLeft: newTime }));
+            handleStudySwitch(newMode);
+        }
+        return () => clearInterval(timer);
+    }, [studyState]);
+
+    const startStudyMode = (studyMin: number, breakMin: number) => {
+        setStudyState({
+            isActive: true,
+            mode: 'STUDY',
+            timeLeft: studyMin * 60,
+            studyDuration: studyMin * 60,
+            breakDuration: breakMin * 60
+        });
+        setIsStudyOpen(false);
+        handleStudySwitch('STUDY');
+        setIsPlaying(true);
+    };
+    const stopStudyMode = () => {
+        setStudyState(prev => ({ ...prev, isActive: false }));
+        handleStudySwitch('REGULAR');
+    };
+
+    const handleStudySwitch = (mode: 'STUDY' | 'BREAK' | 'REGULAR') => {
+        const url = mode === 'STUDY'
+            ? "http://localhost:8081/api/songs/genre/STUDY"
+            : "http://localhost:8081/api/songs";
+
+        fetch(url) // Public songs fetch
             .then(res => res.json())
+            .then(data => {
+                const validSongs = data.filter((s: any) => s?.id != null);
+                setCurrentFilteredSongs(validSongs);
+                if (validSongs.length > 0) setCurrentSong(validSongs[0]);
+            });
+    };
+
+
+    const fetchPlaylists = () => {
+        const token = sessionStorage.getItem("authToken");
+        if (!token) {
+            console.warn("No token found, skipping playlist fetch.");
+            setPlaylists([]); // Set to empty so the sidebar doesn't crash
+            return;
+        }
+
+        authFetch("http://localhost:8081/api/playlists", {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then(res => res.ok ? res.json() : [])
             .then(data => setPlaylists(data))
             .catch(err => console.error("Error fetching playlists:", err));
     };
-
     useEffect(() => {
+        // 1. Fetch Playlists (Will return empty/403 until logged in, which is fine)
         fetchPlaylists();
+
+        // 2. Fetch Songs GLOBALLY (Using standard fetch)
         fetch("http://localhost:8081/api/songs")
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to fetch global songs");
+                return res.json();
+            })
             .then(data => {
-                setAllSongs(data);
-                setCurrentFilteredSongs(data);
-                if (data.length > 0 && !currentSong) {
-                    setCurrentSong(data[0]);
+                // Filter out any potential nulls to prevent React key errors
+                const validSongs = data.filter((s: any) => s?.id != null);
+
+                setAllSongs(validSongs);
+                setCurrentFilteredSongs(validSongs);
+
+                if (validSongs.length > 0 && !currentSong) {
+                    setCurrentSong(validSongs[0]);
                 }
             })
-            .catch(err => console.error("Error fetching songs:", err));
+            .catch(err => console.error("Error fetching global songs:", err));
     }, []);
 
     useEffect(() => {
         if (currentView === 'library') {
-            fetch("http://localhost:8081/api/users/1/library")
+            authFetch(`http://localhost:8081/api/users/${userId}/library`)
                 .then(res => {
                     if (!res.ok) throw new Error("Failed to fetch library");
                     return res.json();
@@ -151,7 +234,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         if (currentView === 'home') {
             const filtered = allSongs.filter(song =>
                 song.name.toLowerCase().includes(value.toLowerCase()) ||
-                song.artist.name.toLowerCase().includes(value.toLowerCase())
+                (song.artist?.name ?? "").toLowerCase().includes(value.toLowerCase())
             );
             setCurrentFilteredSongs(filtered);
         }
@@ -195,7 +278,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             description: data.description || (isEditing ? "" : "Created via App"),
             visibility: "PUBLIC",
             imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop",
-            user_id: { id: 1 },
+            user_id: { id: userId },
             songs: selectedSongs
         };
 
@@ -248,12 +331,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
     // --- Effects for Audio ---
     useEffect(() => {
-        if (audioRef.current && currentSong) {
-            audioRef.current.src = `http://localhost:8081/api/songs/${currentSong.id}/stream`;
-            audioRef.current.load();
-            audioRef.current.play().then(() => setIsPlaying(true)).catch(e => console.error("Play error:", e));
+        if (!audioRef.current || !currentSong?.id) {
+            console.warn("Skipping audio load, invalid song:", currentSong);
+            return;
+        }
+
+        audioRef.current.src =
+            `http://localhost:8081/api/songs/${currentSong.id}/stream`;
+        audioRef.current.load();
+
+        if (isPlaying) {
+            audioRef.current.play().catch(() => {});
         }
     }, [currentSong]);
+
 
     useEffect(() => {
         if (audioRef.current) {
@@ -277,6 +368,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 onCreatePlaylist={handleOpenCreatePlaylist}
                 activePlaylistId={activePlaylistId}
                 currentView={currentView}
+                userId={userId}
             />
 
             <div className={`custom-main-content ${visible ? 'main-content-pushed' : 'main-content-full'}`} ref={mainContentRef}>
@@ -286,8 +378,55 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                     handleSearchChange={handleSearchChange}
                     visible={visible}
                     setVisible={setVisible}
+                    onStudyClick={() => setIsStudyOpen(true)}
+                    studyState={studyState} // ADD THIS
+                    onGiveUp={stopStudyMode}
                 />
 
+                <StudyModeOverlay
+                    isActive={isStudyOpen}
+                    onClose={() => setIsStudyOpen(false)}
+                    onActivate={startStudyMode}
+                    isStudyActive={studyState.isActive}
+                    timeLeft={studyState.timeLeft} // Pass missing props
+                    mode={studyState.mode}         // Pass missing props
+                    onGiveUp={stopStudyMode}
+                />
+                {studyState.isActive && (
+                    <div style={{
+                        position: 'fixed',
+                        top: '0px', // Matches your toolbar height
+                        left: 0,
+                        right: 0,
+                        bottom: '90px',
+                        backgroundColor: '#000000',
+                        zIndex: 9999,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <h1  style={{
+                            fontSize: '12rem', // Massive timer
+                            fontWeight: '800',
+                            color: 'white',
+                            margin: 0,
+                            fontFamily: 'monospace' // Monospace prevents numbers from "jumping"
+                        }}>
+                            {Math.floor(studyState.timeLeft / 60)}:
+                            {(studyState.timeLeft % 60).toString().padStart(2, '0')}
+                        </h1>
+                        <p style={{
+                            color: '#aaa',
+                            letterSpacing: '8px', // More spacing for a premium look
+                            fontSize: '2.5rem',   // Bigger label
+                            textTransform: 'uppercase',
+                            marginTop: '20px'
+                        }}>
+                            {studyState.mode === 'STUDY' ? '📚 Focus Time 📚' : '✨ Break Time ✨'}
+                        </p>
+                    </div>
+                )}
                 {/* --- Content Switching --- */}
                 {currentView === 'library' ? (
                     <LibraryPage
