@@ -4,13 +4,16 @@ import React, { useState, useEffect, useRef, useCallback, type ChangeEvent } fro
 import type { Song, Playlist, PageContentProps, UserLibrary } from '../types';
 import { MainSidebar } from './MainSidebar';
 import { TopToolbar } from './TopToolbar';
-import { PlayerBar } from './Playerbar';
+import {ArtistUploadPage} from "../pages/ArtistUploadPage.tsx";
+import {PlayerBar} from "./Playerbar.tsx";
 import { LibraryPage } from '../pages/LibraryPage';
 import { PlaylistPage } from '../pages/PlaylistPage';
 import { PlaylistFormPage } from '../pages/PlaylistFormPage';
 import './HomaPage.css';
 import { authFetch} from "../types/authFetch.ts";
+import {Toast} from "primereact/toast";
 import {StudyModeOverlay} from "./StudyModeOverlay.tsx"; [StudyModeOverlay];
+
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -22,14 +25,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
     // --- STATE MANAGEMENT ---
     const [visible, setVisible] = useState<boolean>(true);
     const [search, setSearch] = useState<string>("");
+    const toast = useRef<Toast>(null);
 
     // View Management
-    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist'>('home');
-
+    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio'>('home');
     // Data States
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [allSongs, setAllSongs] = useState<Song[]>([]);
     const [userLibrary, setUserLibrary] = useState<UserLibrary | null>(null);
+    const [userRole, setUserRole] = useState<string | null>(null);
 
     // Player States
     const [currentSong, setCurrentSong] = useState<Song | null>(null);
@@ -43,7 +47,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
     const [volume, setVolume] = useState<number>(0.7);
     const [activePlaylistId, setActivePlaylistId] = useState<number | null>(null);
     const [isStudyOpen, setIsStudyOpen] = useState(false);
-
     const audioRef = useRef<HTMLAudioElement>(null);
     const mainContentRef = useRef<HTMLDivElement>(null);
     const [studyState, setStudyState] = useState<{
@@ -75,6 +78,83 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         }
         return () => clearInterval(timer);
     }, [studyState]);
+
+    // src/components/AppLayout.tsx
+
+    useEffect(() => {
+        const token = sessionStorage.getItem("authToken");
+        const storedUserId = sessionStorage.getItem("userId");
+        const targetId = userId || (storedUserId ? parseInt(storedUserId) : null);
+
+        if (token && targetId) {
+            authFetch(`http://localhost:8081/api/users/${targetId}`)
+                .then(res => {
+                    if (!res.ok) throw new Error("Failed to fetch user");
+                    return res.json();
+                })
+                .then(data => {
+                    // Log the data to see exactly what the UserDTO contains
+                    console.log("User Data Received:", data);
+
+                    // Your backend returns a Set called 'roles' which becomes an array
+                    if (data.roles && Array.isArray(data.roles)) {
+                        // We look for the "ROLE_ARTIST" string inside that array
+                        const isArtist = data.roles.includes("ROLE_ARTIST");
+
+                        if (isArtist) {
+                            setUserRole("ROLE_ARTIST");
+                        } else {
+                            setUserRole("ROLE_USER");
+                        }
+                    }
+                })
+                .catch(err => console.error("Error identifying user role:", err));
+        }
+    }, [userId]);
+
+    const handleArtistUpload = async (formData: FormData) => {
+        try {
+            const token = sessionStorage.getItem("authToken");
+            const response = await fetch("http://localhost:8081/api/songs", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                    // Content-Type is OMITTED here
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                // ... your existing refresh logic ...
+
+                // TRIGGER THE TOAST SUCCESS
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Success',
+                    detail: 'Song published to WaveOn!',
+                    life: 3000
+                });
+                return true;
+            } else {
+                // TRIGGER THE TOAST ERROR
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Artist not found or upload failed.',
+                    life: 4000
+                });
+                return false;
+            }
+        } catch (err) {
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Server Error',
+                detail: 'Could not connect to server.',
+                life: 4000
+            });
+            return false;
+        }
+    };
 
     const startStudyMode = (studyMin: number, breakMin: number) => {
         setStudyState({
@@ -369,6 +449,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                 activePlaylistId={activePlaylistId}
                 currentView={currentView}
                 userId={userId}
+                userRole={userRole}
             />
 
             <div className={`custom-main-content ${visible ? 'main-content-pushed' : 'main-content-full'}`} ref={mainContentRef}>
@@ -427,13 +508,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                         </p>
                     </div>
                 )}
-                {/* --- Content Switching --- */}
-                {currentView === 'library' ? (
+                {currentView === 'artist-studio' ? (
+                    <ArtistUploadPage onUpload={handleArtistUpload} />
+                ) :currentView === 'library' ? (
                     <LibraryPage
                         library={userLibrary}
                         onPlaylistClick={handlePlaylistClick}
                     />
-                ) : currentView === 'playlist' ? (
+                ) : (currentView === 'playlist' ? (
                     <PlaylistPage
                         playlist={playlists.find(p => p.id === activePlaylistId)}
                         onSongSelect={(song) => {
@@ -473,7 +555,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                         }
                         return child;
                     })
-                )}
+                ))}
             </div>
 
             {currentSong && (

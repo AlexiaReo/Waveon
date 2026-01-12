@@ -8,7 +8,13 @@ import backend.model.Song;
 import backend.repository.DBArtistRepository;
 import backend.repository.DBSongRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,20 +32,61 @@ public class SongService {
         this.artistRepository = artistRepository;
     }
 
-    public SongDTO createSong(SongDTO dto) {
-        Song song = songMapper.toEntity(dto);
+// backend.service.SongService.java
 
-        if (dto.name() == null || dto.name().isBlank()) {
-            throw new IllegalArgumentException("Song name is required");
+    public SongDTO createSong(String name, String artistName, String genreName, String imageUrl, MultipartFile file) {
+        // 1. Validate Artist exists by name
+        Artist artist = artistRepository.findByName(artistName)
+                .orElseThrow(() -> new RuntimeException("Artist not found with name: " + artistName));
+
+        // 2. Save the file to your resources folder
+        String fileName = saveFile(file);
+
+        // 3. Map Genre
+        Genre genre;
+        try {
+            genre = Genre.valueOf(genreName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            genre = Genre.OTHER; // Fallback
         }
-        Artist artist = artistRepository.findById(dto.artist().id())
-                .orElseThrow(() -> new RuntimeException("Artist not found with id: " + dto.artist().id()));
-        song.setArtist(artist);
-        song.setName(dto.name());
-        song.setGenre(dto.genre());
-        Song saved = songRepository.save(song);
 
+        // 4. Build Entity
+        Song song = new Song();
+        song.setName(name);
+        song.setArtist(artist);
+        song.setGenre(genre);
+        song.setImageUrl(imageUrl);
+        song.setFilepath(fileName);
+
+        Song saved = songRepository.save(song);
         return songMapper.toDTO(saved);
+    }
+
+    private String saveFile(MultipartFile file) {
+        try {
+            // 1. Define the directory path
+            // Using Paths.get("").toAbsolutePath() ensures we start from the project root
+            Path uploadDir = Paths.get("uploads/audio").toAbsolutePath();
+
+            // 2. Create the directory if it doesn't exist
+            if (!Files.exists(uploadDir)) {
+                Files.createDirectories(uploadDir);
+                System.out.println("Created directory: " + uploadDir);
+            }
+
+            // 3. Generate unique filename
+            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            Path targetPath = uploadDir.resolve(fileName);
+
+            // 4. Copy the file
+            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+            return fileName;
+        } catch (IOException e) {
+            // Log the actual error for debugging
+            e.printStackTrace();
+            throw new RuntimeException("Could not save audio file: " + e.getMessage());
+        }
     }
 
 

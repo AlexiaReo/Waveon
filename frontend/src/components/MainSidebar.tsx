@@ -8,6 +8,7 @@ import ExploreOutlinedIcon from '@mui/icons-material/ExploreOutlined';
 import LibraryMusicOutlinedIcon from '@mui/icons-material/LibraryMusicOutlined';
 import AddBoxOutlinedIcon from '@mui/icons-material/AddBoxOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 interface MainSidebarProps {
     visible: boolean;
@@ -19,6 +20,7 @@ interface MainSidebarProps {
     activePlaylistId: number | null;
     currentView: string;
     userId?: number;
+    userRole: string | null;
 }
 
 export const MainSidebar: React.FC<MainSidebarProps> = ({
@@ -30,7 +32,8 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                                                             onCreatePlaylist, // Destructure new prop
                                                             activePlaylistId,
                                                             currentView,
-                                                            userId
+                                                            userId,
+                                                            userRole
                                                         }) => {
 
     const userPlaylists = playlists.filter(p => {
@@ -63,6 +66,16 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                 >
                     <ExploreOutlinedIcon fontSize="inherit" /> <span>Explore</span>
                 </div>
+                {userRole === 'ROLE_ARTIST' && (
+                    <div
+                        className={`custom-nav-item ${currentView === 'artist-studio' ? 'active' : ''}`}
+                        onClick={() => onNavigate('artist-studio' as any)}
+                        style={{ marginTop: '10px', border: '1px solid rgba(241, 88, 9, 0.3)' }}
+                    >
+                        <CloudUploadIcon fontSize="inherit" style={{ color: '#f15809' }} />
+                        <span style={{ color: '#f15809', fontWeight: 'bold' }}>Only for Artist</span>
+                    </div>
+                )}
                 <div
                     className={`custom-nav-item ${currentView === 'library' ? 'active' : ''}`}
                     onClick={() => onNavigate('library')}

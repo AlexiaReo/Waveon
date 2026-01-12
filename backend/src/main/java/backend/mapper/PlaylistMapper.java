@@ -16,6 +16,6 @@ public interface PlaylistMapper {
 
     default UserDTO mapUser(backend.model.User user) {
         if (user == null) return null;
-        return new UserDTO(user.getId(), user.getUsername());
+        return new UserDTO(user.getId(), user.getUsername(), user.getRoles());
     }
 }

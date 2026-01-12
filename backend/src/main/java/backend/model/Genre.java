@@ -10,5 +10,6 @@ public enum Genre {
     FOLK,
     REGGAETON,
     JAZZ,
-    STUDY
+    STUDY,
+    OTHER
 }
