@@ -8,7 +8,7 @@ import backend.dto.ArtistDTO;
 public interface ArtistMapper {
     default ArtistDTO toDto(Artist artist) {
         if (artist == null) return null;
-        return new ArtistDTO(artist.getId(), artist.getName(), artist.getFollowers());
+        return new ArtistDTO(artist.getId(), artist.getName(), artist.getFollowers(), artist.getImageUrl());
     }
 
     default Artist toEntity(ArtistDTO dto) {
@@ -16,6 +16,7 @@ public interface ArtistMapper {
         Artist artist = new Artist();
         artist.setName(dto.name());
         artist.setFollowers(dto.followers());
+        artist.setImageUrl(dto.imageUrl());
         return artist;
     }
 }
