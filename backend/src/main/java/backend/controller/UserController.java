@@ -48,14 +48,11 @@ public class UserController {
     }
 
     @GetMapping("/{id}/profile")
-    public ResponseEntity<UserProfileDTO> getProfile(@PathVariable Long id,
-                                                     @RequestParam(required = false) Long viewerId) {
+    public ResponseEntity<UserProfileDTO> getProfile(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long viewerId
+    ) {
         return ResponseEntity.ok(profileService.getProfile(id, viewerId));
-    }
-
-    @GetMapping("/{id}/library")
-    public ResponseEntity<UserLibraryDTO> getUserLibrary(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserLibrary(id));
     }
 
     @PutMapping("/{id}")

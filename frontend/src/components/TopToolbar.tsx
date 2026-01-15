@@ -1,5 +1,6 @@
 // src/components/TopToolbar.tsx
-import React, { type ChangeEvent } from 'react';
+import * as React from 'react';
+import type { ChangeEvent } from 'react';
 import { Toolbar } from 'primereact/toolbar';
 import { Button } from 'primereact/button';
 import { InputText } from 'primereact/inputtext';
@@ -15,16 +16,19 @@ interface TopToolbarProps {
     onStudyClick: () => void;
     studyState: { isActive: boolean; mode: 'STUDY' | 'BREAK'; timeLeft: number };
     onGiveUp: () => void;
+    onProfileClick: () => void;
 }
 
 export const TopToolbar: React.FC<TopToolbarProps> = ({
-                                                          search,
-                                                          handleSearchChange,
-                                                          visible,
-                                                          setVisible,
-                                                          onStudyClick,
-    studyState, onGiveUp
-                                                      }) => {
+                                                           search,
+                                                           handleSearchChange,
+                                                           visible,
+                                                           setVisible,
+                                                           onStudyClick,
+    studyState,
+    onGiveUp,
+    onProfileClick
+                                                       }) => {
 
     // --- Toolbar Contents ---
 
@@ -96,7 +100,15 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({
                 disabled={studyState.isActive} // Disable choice button if mode is running
             />
             <div className="user-actions flex items-center">
-                <Person3Icon fontSize="large" className="text-white cursor-pointer" />
+                <button
+                    type="button"
+                    aria-label="Open profile"
+                    onClick={onProfileClick}
+                    className="bg-transparent border-0 p-0 m-0"
+                    style={{ lineHeight: 0 }}
+                >
+                    <Person3Icon fontSize="large" className="text-white cursor-pointer" />
+                </button>
             </div>
         </div>
     );
