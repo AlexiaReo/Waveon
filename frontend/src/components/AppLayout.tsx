@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import type { Song, Playlist, Artist, UserLibrary } from '../types';
+import type { Song, Playlist, Artist } from '../types';
 
 import { MainSidebar } from './MainSidebar';
 import { TopToolbar } from './TopToolbar';
@@ -17,10 +17,10 @@ import { FavoritesPage } from '../pages/FavoritesPage';
 import { DiscoveryMap } from "../pages/DiscoveryMap.tsx"; // Galaxy of Music
 // ----------------------
 
-import './HomePage.css';
 import { authFetch } from "../types/authFetch.ts";
 import { Toast } from 'primereact/toast';
 import { apiUrl } from "../config/api";
+import './HomePage.css';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -32,16 +32,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     const [search, setSearch] = useState<string>("");
     const toast = useRef<Toast>(null);
 
-    // Helper for newest-first sorting
     const normalizeSongs = (data: any[]): Song[] => {
         return (data || [])
             .filter((s: any) => s.id != null)
             .sort((a: any, b: any) => Number(b.id) - Number(a.id));
     };
 
-    // --- MERGED VIEW STATE ---
     const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio' | 'artist' | 'profile' | 'galaxy'>('home');
-
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [allSongs, setAllSongs] = useState<Song[]>([]);
     const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
@@ -50,7 +47,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const [activePlaylistId, setActivePlaylistId] = useState<number | null>(null);
 
-    // 1. Fetch Playlists
     const fetchPlaylists = () => {
         const token = sessionStorage.getItem("authToken");
         if (!userId || !token) return;
@@ -59,7 +55,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
 
     useEffect(() => { fetchPlaylists(); }, [userId]);
 
-    // 2. Fetch Songs and Likes (Merged Async Logic)
     useEffect(() => {
         const fetchSongsAndLikes = async () => {
             try {
@@ -94,8 +89,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         if (view === 'home') setCurrentFilteredSongs(allSongs);
     };
 
-    const handleOpenProfile = () => setCurrentView('profile');
-
     const renderContent = () => {
         switch (currentView) {
             case 'library': return <LibraryPage playlists={playlists} onNavigate={handleNavigate} />;
@@ -121,7 +114,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     return (
         <div className="app-layout">
             <Toast ref={toast} />
-            <TopToolbar onSearch={setSearch} onLogout={onLogout} onNavigate={handleNavigate} onOpenProfile={handleOpenProfile} />
+            <TopToolbar onSearch={setSearch} onLogout={onLogout} onNavigate={handleNavigate} onOpenProfile={() => setCurrentView('profile')} />
             <div className="main-container">
                 <MainSidebar onNavigate={handleNavigate} playlists={playlists} currentView={currentView} />
                 <div className="content-area">{renderContent()}</div>

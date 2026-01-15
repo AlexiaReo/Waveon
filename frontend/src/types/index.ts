@@ -12,6 +12,7 @@ export interface Song {
     artist: Artist;
     filepath: string;
     imageUrl: string;
+    isLiked?: boolean;
 }
 
 export interface Playlist {
