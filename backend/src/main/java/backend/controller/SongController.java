@@ -10,9 +10,10 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize; // ✅ ADDED
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -24,11 +25,6 @@ import java.util.List;
 public class SongController {
 
     private final SongService songService;
-
-  /*  public SongController(SongService songService) {
-        this.songService = songService;
-    }*/
-
     private final SongLikeService songLikeService;
 
     @PostMapping("/{songId}/like")
@@ -38,9 +34,16 @@ public class SongController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping
-    public ResponseEntity<SongDTO> createSong(@RequestBody SongDTO song) {
-        return ResponseEntity.ok(songService.createSong(song));
+    @PreAuthorize("hasRole('ARTIST')")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<SongDTO> createSong(
+            @RequestParam("name") String name,
+            @RequestParam("artistName") String artistName,
+            @RequestParam("genre") String genre,
+            @RequestParam("imageUrl") String imageUrl,
+            @RequestPart("file") MultipartFile file) {
+
+        return ResponseEntity.ok(songService.createSong(name, artistName, genre, imageUrl, file));
     }
 
     @GetMapping
@@ -64,6 +67,7 @@ public class SongController {
         }
     }
 
+    @PreAuthorize("hasRole('ARTIST')")
     @PutMapping("/{id}")
     public ResponseEntity<SongDTO> updateSong(
             @PathVariable Long id,
@@ -78,6 +82,7 @@ public class SongController {
         }
     }
 
+    @PreAuthorize("hasRole('ARTIST')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
         songService.deleteSong(id);
@@ -87,19 +92,23 @@ public class SongController {
     @GetMapping("/{id}/stream")
     public ResponseEntity<Resource> streamSong(@PathVariable Long id) {
         SongDTO song = songService.getSongById(id);
+        if (song == null || song.filepath() == null) return ResponseEntity.notFound().build();
 
-        if (song == null || song.filepath() == null) {
-            return ResponseEntity.notFound().build();
+        // 1. Check in manually added resources (src/main/resources/audio)
+        Resource resource = new ClassPathResource("audio/" + song.filepath());
+
+        // 2. If not found in resources, check in the external uploads folder
+        if (!resource.exists()) {
+            Path uploadPath = Paths.get("uploads/audio").toAbsolutePath().resolve(song.filepath());
+            resource = new FileSystemResource(uploadPath);
         }
-
-        ClassPathResource resource = new ClassPathResource("audio/" + song.filepath());
 
         if (!resource.exists()) {
             return ResponseEntity.notFound().build();
         }
 
         return ResponseEntity.ok()
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .contentType(MediaType.parseMediaType("audio/mpeg"))
                 .body(resource);
     }
 

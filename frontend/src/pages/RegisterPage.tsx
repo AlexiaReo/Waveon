@@ -178,4 +178,3 @@ export const RegisterPage = ({ onRegisterSuccess }: RegisterPageProps) => {
         </div>
     );
 };
-

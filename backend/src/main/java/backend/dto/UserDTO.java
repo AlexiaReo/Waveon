@@ -1,3 +1,5 @@
 package backend.dto;
 
-public record UserDTO(Long id, String username) { }
+import java.util.Set;
+
+public record UserDTO(Long id, String username, Set<String> roles) { }

@@ -1,7 +1,6 @@
 package backend.model;
 
 import jakarta.persistence.*;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,13 +41,11 @@ public class Playlist {
     @Setter
     private String imageUrl;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER) // CHANGED: EAGER fetch to ensure songs are loaded
     @JoinTable(
-            name = "playlist_songs", //db
+            name = "playlist_songs",
             joinColumns = @JoinColumn(name = "playlist_id"),
             inverseJoinColumns = @JoinColumn(name = "song_id")
     )
     private List<Song> songs = new ArrayList<>();
 }
-
-
