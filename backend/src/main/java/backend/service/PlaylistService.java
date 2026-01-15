@@ -10,6 +10,7 @@ import backend.repository.DBPlaylistRepository;
 import backend.repository.DBSongRepository;
 import backend.repository.DBUserRepository;
 import org.springframework.stereotype.Service;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -117,5 +118,16 @@ public class PlaylistService {
         } else {
             return playlistMapper.toDto(playlist);
         }
+    }
+
+    public List<SongDTO> getPlaylistSongs(Long playlistId) {
+        Playlist playlist = playlistRepository.findWithSongsById(playlistId)
+                .orElseThrow(() -> new RuntimeException("Playlist not found with id: " + playlistId));
+
+        PlaylistDTO dto = playlistMapper.toDto(playlist);
+        if (dto.songs() == null) {
+            return Collections.emptyList();
+        }
+        return dto.songs();
     }
 }

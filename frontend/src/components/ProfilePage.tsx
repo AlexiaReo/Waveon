@@ -1,4 +1,5 @@
-import React, {useEffect, useMemo, useState} from "react";
+import * as React from "react";
+import { useEffect, useMemo, useState } from "react";
 import {Button} from "primereact/button";
 
 interface UserDTO {
@@ -27,12 +28,15 @@ interface ProfilePageProps {
     viewerId: number;
     onBack: () => void;
     onOpenPlaylist: (playlistId: number) => void;
+    onPlayPlaylist: (playlistId: number) => void;
 }
 
-export const ProfilePage: React.FC<ProfilePageProps> = ({userId, viewerId, onBack, onOpenPlaylist}) => {
+export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps) => {
+    const { userId, viewerId, onBack, onOpenPlaylist, onPlayPlaylist } = props;
     const [profile, setProfile] = useState<UserProfileDTO | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [actionsOpen, setActionsOpen] = useState(false);
 
     const profileUrl = useMemo(() => {
         const params = new URLSearchParams();
@@ -91,6 +95,33 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({userId, viewerId, onBac
     const privatePlaylists = useMemo(() => {
         return (profile?.playlists ?? []).filter((p) => p.visibility === "PRIVATE");
     }, [profile?.playlists]);
+
+    const firstPlaylistId = profile?.playlists?.[0]?.id;
+
+    const handlePlay = () => {
+        if (firstPlaylistId == null) return;
+        onPlayPlaylist(firstPlaylistId);
+    };
+
+    const handleCopyProfileLink = async () => {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+        } catch {
+            // Fallback (older browsers)
+            try {
+                const el = document.createElement("textarea");
+                el.value = window.location.href;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand("copy");
+                document.body.removeChild(el);
+            } catch {
+                // ignore
+            }
+        } finally {
+            setActionsOpen(false);
+        }
+    };
 
     return (
         <div className="bg-[#121212] text-white min-h-screen flex flex-col">
@@ -177,11 +208,37 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({userId, viewerId, onBac
                                                 icon="pi pi-play"
                                                 className="p-button-rounded"
                                                 style={{backgroundColor: "#1db954", borderColor: "#1db954"}}
+                                                onClick={handlePlay}
+                                                disabled={!firstPlaylistId}
                                             />
-                                            <Button
-                                                icon="pi pi-ellipsis-h"
-                                                className="p-button-text p-button-rounded"
-                                            />
+                                            <div className="relative">
+                                                <Button
+                                                    icon="pi pi-ellipsis-h"
+                                                    className="p-button-text p-button-rounded"
+                                                    onClick={() => setActionsOpen((v) => !v)}
+                                                />
+                                                {actionsOpen && (
+                                                    <div
+                                                        className="absolute right-0 mt-2 w-56 rounded-lg border border-white/10 bg-[#1e1e1e] shadow-xl z-50"
+                                                        role="menu"
+                                                    >
+                                                        <button
+                                                            type="button"
+                                                            className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10"
+                                                            onClick={handleCopyProfileLink}
+                                                        >
+                                                            Copy profile link
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="w-full text-left px-4 py-3 text-sm text-white/80 hover:bg-white/10"
+                                                            onClick={() => setActionsOpen(false)}
+                                                        >
+                                                            Close
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
