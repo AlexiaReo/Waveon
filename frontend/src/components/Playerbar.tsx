@@ -3,6 +3,8 @@ import type { Song } from '../types';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import ShuffleIcon from '@mui/icons-material/Shuffle';
 import VolumeDownIcon from '@mui/icons-material/VolumeDown';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 
 interface PlayerBarProps {
     currentSong: Song;
@@ -21,6 +23,7 @@ interface PlayerBarProps {
     handleVolumeChange: (e: React.MouseEvent<HTMLDivElement>) => void;
     handleNextSong: () => void;
     handlePreviousSong: () => void;
+    onToggleLike: (id: number) => void;
 }
 
 export const PlayerBar: React.FC<PlayerBarProps> = ({
@@ -40,6 +43,7 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                                                         handleVolumeChange,
                                                         handleNextSong,
                                                         handlePreviousSong,
+                                                        onToggleLike
                                                     }) => {
 
     const playPauseIconStyle = {
@@ -67,11 +71,24 @@ export const PlayerBar: React.FC<PlayerBarProps> = ({
                     <h4 className="m-0 mb-1 text-sm font-semibold truncate" title={currentSong.name}>{currentSong.name}</h4>
                     <p className="m-0 text-xs text-gray-400 truncate">{currentSong.artist?.name}</p>
                 </div>
+
+
             </div>
 
             {/* Player Controls */}
             <div className="player-controls flex-1 flex flex-col gap-2 items-center">
                 <div className="control-buttons flex gap-4 items-center">
+                    <button
+                        onClick={() => onToggleLike(currentSong.id)}
+                        className="ml-2 text-gray-400 hover:text-white transition-transform hover:scale-110 active:scale-95"
+                        title={currentSong.isLiked ? "Unlike" : "Like"}
+                    >
+                        {currentSong.isLiked ? (
+                            <FavoriteIcon style={{ color: '#acacac' }} /> // Red Heart
+                        ) : (
+                            <FavoriteBorderIcon /> // Outline Heart
+                        )}
+                    </button>
                     <button
                         className="control-btn"
                         aria-label="Shuffle"

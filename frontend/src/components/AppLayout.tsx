@@ -208,25 +208,46 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         // 1. Fetch Playlists (Will return empty/403 until logged in, which is fine)
         fetchPlaylists();
 
-        // 2. Fetch Songs GLOBALLY (Using standard fetch)
-        fetch("http://localhost:8081/api/songs")
-            .then(res => {
-                if (!res.ok) throw new Error("Failed to fetch global songs");
-                return res.json();
-            })
-            .then(data => {
-                // Filter out any potential nulls to prevent React key errors
-                const validSongs = data.filter((s: any) => s?.id != null);
+        //for fetch liked songs also
+        const fetchSongsAndLikes = async () => {
+            try {
+                // A. Fetch All Songs
+                const songsResponse = await fetch("http://localhost:8081/api/songs");
+                const allSongsData = await songsResponse.json();
 
-                setAllSongs(validSongs);
-                setCurrentFilteredSongs(validSongs);
-
-                if (validSongs.length > 0 && !currentSong) {
-                    setCurrentSong(validSongs[0]);
+                // B. Fetch Liked Songs (Only if user is logged in)
+                let likedSongIds = new Set<number>();
+                if (userId) {
+                    const likesResponse = await authFetch(`http://localhost:8081/api/songs/like?userId=${userId}`);
+                    if (likesResponse.ok) {
+                        const likedSongsData: Song[] = await likesResponse.json();
+                        // Create a Set of IDs for fast lookup
+                        likedSongsData.forEach(s => likedSongIds.add(s.id));
+                    }
                 }
-            })
-            .catch(err => console.error("Error fetching global songs:", err));
-    }, []);
+
+                // C. MERGE THEM: Add 'isLiked: true' if the song is in the liked list
+                const mergedSongs = allSongsData
+                    .filter((s: any) => s?.id != null)
+                    .map((s: Song) => ({
+                        ...s,
+                        isLiked: likedSongIds.has(s.id) // <--- THIS IS THE MAGIC
+                    }));
+
+                setAllSongs(mergedSongs);
+                setCurrentFilteredSongs(mergedSongs);
+
+                if (mergedSongs.length > 0 && !currentSong) {
+                    setCurrentSong(mergedSongs[0]);
+                }
+
+            } catch (error) {
+                console.error("Error fetching songs:", error);
+            }
+        };
+
+        fetchSongsAndLikes();
+    }, [userId]); // Re-run if user logs in/out
 
     useEffect(() => {
         if (currentView === 'library') {
@@ -441,6 +462,37 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         if (audioRef.current) audioRef.current.volume = volume;
     }, [volume]);
 
+    const toggleLike = async (songId: number) => {
+        if (!userId) return;
+
+        // 1. Optimistic UI Update
+        // We define the mapping logic once to reuse it
+        const updateSongList = (list: Song[]) =>
+            list.map(s => s.id === songId ? { ...s, isLiked: !s.isLiked } : s);
+
+        // Update the main list
+        setAllSongs(prev => updateSongList(prev));
+
+        // Update the filtered list
+        setCurrentFilteredSongs(prev => updateSongList(prev));
+
+        // Update the currently playing song if needed
+        if (currentSong?.id === songId) {
+            setCurrentSong(prev => prev ? { ...prev, isLiked: !prev.isLiked } : null);
+        }
+
+        // 2. Call Backend
+        try {
+            await authFetch(`http://localhost:8081/api/songs/${songId}/like?userId=${userId}`, {
+                method: "POST"
+            });
+        } catch (error) {
+            console.error("Like failed", error);
+            // Revert on error (flip it back)
+            setAllSongs(prev => updateSongList(prev));
+            setCurrentFilteredSongs(prev => updateSongList(prev));
+        }
+    };
     return (
         <div className="music-platform-wrapper flex min-h-screen">
             <MainSidebar
@@ -526,15 +578,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                             setCurrentSong(song);
                             setIsPlaying(true);
                         }}
+                        onToggleLike={toggleLike}
                     />
                 ) : currentView === 'favorites' ? (
-                    /* --- NEW: FAVORITES PAGE --- */
                     <FavoritesPage
-                        songs={search.length > 0 ? currentFilteredSongs : allSongs}
+                        // FILTER LOGIC: Only pass songs where isLiked is TRUE
+                        songs={(search.length > 0 ? currentFilteredSongs : allSongs).filter(s => s.isLiked)}
                         handleSongSelect={(song) => {
                             setCurrentSong(song);
                             setIsPlaying(true);
                         }}
+                        onToggleLike={toggleLike} // Pass function
                     />
                 ) : (currentView === 'playlist' ? (
                     <PlaylistPage
@@ -571,7 +625,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                                     setIsPlaying(true);
                                     mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                                 },
-                                onNavigate: handleNavigate // <--- CRITICAL UPDATE
+                                onNavigate: handleNavigate, // <--- CRITICAL UPDATE
+                                onToggleLike: toggleLike
                             };
                             return React.cloneElement(child, injectedProps as any);}
                         return child;
@@ -583,6 +638,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                 <>
                     <PlayerBar
                         currentSong={currentSong}
+                        onToggleLike={toggleLike}
                         isPlaying={isPlaying}
                         setIsPlaying={setIsPlaying}
                         progress={progress}
