@@ -13,7 +13,8 @@ import './HomaPage.css';
 import { authFetch} from "../types/authFetch.ts";
 import {Toast} from "primereact/toast";
 import {StudyModeOverlay} from "./StudyModeOverlay.tsx"; [StudyModeOverlay];
-
+import { ExplorePage } from '../pages/ExplorePage';
+import { FavoritesPage } from '../pages/FavoritesPage';
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -28,7 +29,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
     const toast = useRef<Toast>(null);
 
     // View Management
-    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio'>('home');
+    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio'>('home');
     // Data States
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [allSongs, setAllSongs] = useState<Song[]>([]);
@@ -310,8 +311,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
 
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        setSearch(value);
-        if (currentView === 'home') {
+         setSearch(value);
+        if (value.trim() === "") {
+            setCurrentFilteredSongs(allSongs);
+        } else {
+            // Otherwise, filter the list immediately
             const filtered = allSongs.filter(song =>
                 song.name.toLowerCase().includes(value.toLowerCase()) ||
                 (song.artist?.name ?? "").toLowerCase().includes(value.toLowerCase())
@@ -321,7 +325,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
     };
 
     // --- Navigation Handlers ---
-    const handleNavigate = (view: 'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist') => {
+    const handleNavigate = (view: 'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist') => {
         setCurrentView(view);
         setActivePlaylistId(null);
         if (view === 'home') {
@@ -515,6 +519,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                         library={userLibrary}
                         onPlaylistClick={handlePlaylistClick}
                     />
+                ) : currentView === 'explore' ? (
+                    <ExplorePage
+                        songs={search.length > 0 ? currentFilteredSongs : allSongs}
+                        handleSongSelect={(song) => {
+                            setCurrentSong(song);
+                            setIsPlaying(true);
+                        }}
+                    />
+                ) : currentView === 'favorites' ? (
+                    /* --- NEW: FAVORITES PAGE --- */
+                    <FavoritesPage
+                        songs={search.length > 0 ? currentFilteredSongs : allSongs}
+                        handleSongSelect={(song) => {
+                            setCurrentSong(song);
+                            setIsPlaying(true);
+                        }}
+                    />
                 ) : (currentView === 'playlist' ? (
                     <PlaylistPage
                         playlist={playlists.find(p => p.id === activePlaylistId)}
@@ -550,9 +571,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                                     setIsPlaying(true);
                                     mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                                 },
+                                onNavigate: handleNavigate // <--- CRITICAL UPDATE
                             };
-                            return React.cloneElement(child, injectedProps as any);
-                        }
+                            return React.cloneElement(child, injectedProps as any);}
                         return child;
                     })
                 ))}
