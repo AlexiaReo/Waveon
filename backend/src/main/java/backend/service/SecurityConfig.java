@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll()
                         // ✅ Permit song/playlist access so the app can load data
                         .requestMatchers("/songs/**", "/playlists/**", "/artists/**", "/api/songs/**", "/api/songs/*/stream").permitAll()
+                        // ✅ Profile page can be viewed publicly; backend decides if viewer is owner
+                        .requestMatchers("/users/*/profile", "/api/users/*/profile").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

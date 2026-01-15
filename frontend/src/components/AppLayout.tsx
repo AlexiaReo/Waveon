@@ -1,6 +1,8 @@
 // src/components/AppLayout.tsx
 
-import React, { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
+import * as React from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import type { ChangeEvent } from "react";
 import type { Song, Playlist, Artist, UserLibrary } from '../types';
 import { MainSidebar } from './MainSidebar';
 import { TopToolbar } from './TopToolbar';
@@ -10,6 +12,7 @@ import { LibraryPage } from '../pages/LibraryPage';
 import { PlaylistPage } from '../pages/PlaylistPage';
 import { PlaylistFormPage } from '../pages/PlaylistFormPage';
 import { ArtistPage } from '../pages/ArtistPage';
+import { ProfilePage } from './ProfilePage';
 import './HomaPage.css';
 import { authFetch} from "../types/authFetch.ts";
 import {Toast} from "primereact/toast";
@@ -32,7 +35,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
 
 
     // View Management
-    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' |  'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio' | 'artist' | 'galaxy'>('home');
+    const [currentView, setCurrentView] = useState<
+        'home'
+        | 'library'
+        | 'explore'
+        | 'favorites'
+        | 'playlist'
+        | 'create-playlist'
+        | 'edit-playlist'
+        | 'artist-studio'
+        | 'artist'
+        | 'galaxy'
+        | 'profile'
+    >('home');
     // Data States
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [allSongs, setAllSongs] = useState<Song[]>([]);
@@ -385,6 +400,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         }
     };
 
+    const effectiveUserId = (() => {
+        if (userId != null) return userId;
+        const storedUserId = sessionStorage.getItem("userId");
+        return storedUserId ? parseInt(storedUserId, 10) : undefined;
+    })();
+
+    const handleOpenProfile = () => {
+        if (!effectiveUserId) {
+            console.warn("No userId available; cannot open profile.");
+            return;
+        }
+        setCurrentView('profile');
+    };
+
     const handlePlaylistClick = (playlistId: number) => {
         setActivePlaylistId(playlistId);
         setCurrentView('playlist');
@@ -462,6 +491,43 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         setCurrentView('artist');
         if (mainContentRef.current) mainContentRef.current.scrollTop = 0;
     };
+
+    // Used by ProfilePage (play from profile without an extra click)
+    const handlePlayPlaylist = useCallback(async (playlistId: number) => {
+        setActivePlaylistId(playlistId);
+        setCurrentView('playlist');
+
+        const existing = playlists.find(p => p.id === playlistId);
+        if (existing?.songs?.length) {
+            setCurrentFilteredSongs(existing.songs);
+            setCurrentSong(existing.songs[0]);
+            setIsPlaying(true);
+            return;
+        }
+
+        try {
+            const res = await authFetch(`http://localhost:8081/api/playlists/${playlistId}`);
+            if (!res.ok) throw new Error(`Failed to fetch playlist ${playlistId}`);
+            const full: Playlist = await res.json();
+
+            setPlaylists(prev => {
+                const idx = prev.findIndex(p => p.id === playlistId);
+                if (idx === -1) return [...prev, full];
+                const next = [...prev];
+                next[idx] = full;
+                return next;
+            });
+
+            const songs = full.songs ?? [];
+            setCurrentFilteredSongs(songs);
+            if (songs.length) {
+                setCurrentSong(songs[0]);
+                setIsPlaying(true);
+            }
+        } catch (e) {
+            console.error("Failed to play playlist:", e);
+        }
+    }, [playlists]);
 
     const handleOpenCreatePlaylist = () => {
         setCurrentView('create-playlist');
@@ -615,6 +681,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                     onStudyClick={() => setIsStudyOpen(true)}
                     studyState={studyState} // ADD THIS
                     onGiveUp={stopStudyMode}
+                    onProfileClick={handleOpenProfile}
                 />
 
                 <StudyModeOverlay
@@ -661,7 +728,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                         </p>
                     </div>
                 )}
-                {currentView === 'artist-studio' ? (
+                {currentView === 'profile' ? (
+                    <ProfilePage
+                        userId={effectiveUserId as number}
+                        viewerId={effectiveUserId as number}
+                        onBack={() => setCurrentView('home')}
+                        onOpenPlaylist={(playlistId: number) => handlePlaylistClick(playlistId)}
+                        onPlayPlaylist={(playlistId: number) => void handlePlayPlaylist(playlistId)}
+                    />
+                ) : currentView === 'artist-studio' ? (
                     <ArtistUploadPage onUpload={handleArtistUpload} />
                 ) : currentView === 'artist' && selectedArtistId ? (
                     (() => {
@@ -721,7 +796,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                 ) : (currentView === 'playlist' ? (
                     <PlaylistPage
                         playlist={playlists.find(p => p.id === activePlaylistId)}
-                        onSongSelect={(song) => {
+                        onSongSelect={(song: Song) => {
                             setCurrentSong(song);
                             setIsPlaying(true);
                         }}
