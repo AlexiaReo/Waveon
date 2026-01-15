@@ -6,6 +6,7 @@ interface HomePageProps {
     songs?: Song[];
     filteredSongs?: Song[];
     handleSongSelect?: (song: Song) => void;
+    onArtistClick?: (id: number) => void;
     onNavigate?: (view: any) => void;
     onToggleLike: (id: number) => void; // Define prop
     isSearching?: boolean;
@@ -15,6 +16,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                                                       songs=[],
                                                       filteredSongs=[],
                                                       handleSongSelect = () => {},
+                                                      onArtistClick,
                                                       onNavigate = () => {},
                                                       isSearching = false,
                                                       onToggleLike // Destructure prop
@@ -63,6 +65,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                             key={`song-${song.id}`}
                             song={song}
                             onSongSelect={handleSongSelect}
+                            onArtistClick={onArtistClick}
                             gradientStyle={cardGradients[index % cardGradients.length]}
                             onToggleLike={onToggleLike} // <--- PASSED HERE
                         />
@@ -84,6 +87,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                                 key={`top-song-${song.id}`}
                                 song={song}
                                 onSongSelect={handleSongSelect}
+                                onArtistClick={onArtistClick}
                                 gradientStyle={cardGradients[index % cardGradients.length]}
                                 onToggleLike={onToggleLike}
                             />
