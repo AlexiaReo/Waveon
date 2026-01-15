@@ -16,8 +16,14 @@ import './HomaPage.css';
 import { authFetch} from "../types/authFetch.ts";
 import {Toast} from "primereact/toast";
 import {StudyModeOverlay} from "./StudyModeOverlay.tsx"; [StudyModeOverlay];
+<<<<<<< HEAD
 import { apiUrl } from "../config/api";
-
+import { ExplorePage } from '../pages/ExplorePage';
+import { FavoritesPage } from '../pages/FavoritesPage';
+=======
+import { ExplorePage } from '../pages/ExplorePage';
+import { FavoritesPage } from '../pages/FavoritesPage';
+>>>>>>> origin/main
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -42,7 +48,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     };
 
     // View Management
+<<<<<<< HEAD
     const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio' | 'profile'>('home');
+=======
+    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio'>('home');
+>>>>>>> origin/main
     // Data States
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [allSongs, setAllSongs] = useState<Song[]>([]);
@@ -268,6 +278,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         // 1. Fetch Playlists (Will return empty/403 until logged in, which is fine)
         fetchPlaylists();
 
+<<<<<<< HEAD
         // 2. Fetch Songs GLOBALLY (Using standard fetch)
         fetch(apiUrl("/songs"))
             .then(res => {
@@ -276,16 +287,48 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
             })
             .then(data => {
                 const validSongs = normalizeSongs(data);
+=======
+        //for fetch liked songs also
+        const fetchSongsAndLikes = async () => {
+            try {
+                // A. Fetch All Songs
+                const songsResponse = await fetch("http://localhost:8081/api/songs");
+                const allSongsData = await songsResponse.json();
+>>>>>>> origin/main
 
-                setAllSongs(validSongs);
-                setCurrentFilteredSongs(validSongs);
-
-                if (validSongs.length > 0 && !currentSong) {
-                    setCurrentSong(validSongs[0]);
+                // B. Fetch Liked Songs (Only if user is logged in)
+                let likedSongIds = new Set<number>();
+                if (userId) {
+                    const likesResponse = await authFetch(`http://localhost:8081/api/songs/like?userId=${userId}`);
+                    if (likesResponse.ok) {
+                        const likedSongsData: Song[] = await likesResponse.json();
+                        // Create a Set of IDs for fast lookup
+                        likedSongsData.forEach(s => likedSongIds.add(s.id));
+                    }
                 }
-            })
-            .catch(err => console.error("Error fetching global songs:", err));
-    }, []);
+
+                // C. MERGE THEM: Add 'isLiked: true' if the song is in the liked list
+                const mergedSongs = allSongsData
+                    .filter((s: any) => s?.id != null)
+                    .map((s: Song) => ({
+                        ...s,
+                        isLiked: likedSongIds.has(s.id) // <--- THIS IS THE MAGIC
+                    }));
+
+                setAllSongs(mergedSongs);
+                setCurrentFilteredSongs(mergedSongs);
+
+                if (mergedSongs.length > 0 && !currentSong) {
+                    setCurrentSong(mergedSongs[0]);
+                }
+
+            } catch (error) {
+                console.error("Error fetching songs:", error);
+            }
+        };
+
+        fetchSongsAndLikes();
+    }, [userId]); // Re-run if user logs in/out
 
     useEffect(() => {
         if (currentView === 'library') {
@@ -370,8 +413,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
 
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-        setSearch(value);
-        if (currentView === 'home') {
+         setSearch(value);
+        if (value.trim() === "") {
+            setCurrentFilteredSongs(allSongs);
+        } else {
+            // Otherwise, filter the list immediately
             const filtered = allSongs.filter(song =>
                 song.name.toLowerCase().includes(value.toLowerCase()) ||
                 (song.artist?.name ?? "").toLowerCase().includes(value.toLowerCase())
@@ -381,7 +427,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     };
 
     // --- Navigation Handlers ---
+<<<<<<< HEAD
     const handleNavigate = (view: 'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'profile') => {
+=======
+    const handleNavigate = (view: 'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist') => {
+>>>>>>> origin/main
         setCurrentView(view);
         setActivePlaylistId(null);
         if (view === 'home') {
@@ -581,6 +631,37 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         if (audioRef.current) audioRef.current.volume = volume;
     }, [volume]);
 
+    const toggleLike = async (songId: number) => {
+        if (!userId) return;
+
+        // 1. Optimistic UI Update
+        // We define the mapping logic once to reuse it
+        const updateSongList = (list: Song[]) =>
+            list.map(s => s.id === songId ? { ...s, isLiked: !s.isLiked } : s);
+
+        // Update the main list
+        setAllSongs(prev => updateSongList(prev));
+
+        // Update the filtered list
+        setCurrentFilteredSongs(prev => updateSongList(prev));
+
+        // Update the currently playing song if needed
+        if (currentSong?.id === songId) {
+            setCurrentSong(prev => prev ? { ...prev, isLiked: !prev.isLiked } : null);
+        }
+
+        // 2. Call Backend
+        try {
+            await authFetch(`http://localhost:8081/api/songs/${songId}/like?userId=${userId}`, {
+                method: "POST"
+            });
+        } catch (error) {
+            console.error("Like failed", error);
+            // Revert on error (flip it back)
+            setAllSongs(prev => updateSongList(prev));
+            setCurrentFilteredSongs(prev => updateSongList(prev));
+        }
+    };
     return (
         <div className="music-platform-wrapper flex min-h-screen">
             {/* Global notifications (used by Artist Upload + profile actions) */}
@@ -672,6 +753,25 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                         library={userLibrary}
                         onPlaylistClick={handlePlaylistClick}
                     />
+                ) : currentView === 'explore' ? (
+                    <ExplorePage
+                        songs={search.length > 0 ? currentFilteredSongs : allSongs}
+                        handleSongSelect={(song) => {
+                            setCurrentSong(song);
+                            setIsPlaying(true);
+                        }}
+                        onToggleLike={toggleLike}
+                    />
+                ) : currentView === 'favorites' ? (
+                    <FavoritesPage
+                        // FILTER LOGIC: Only pass songs where isLiked is TRUE
+                        songs={(search.length > 0 ? currentFilteredSongs : allSongs).filter(s => s.isLiked)}
+                        handleSongSelect={(song) => {
+                            setCurrentSong(song);
+                            setIsPlaying(true);
+                        }}
+                        onToggleLike={toggleLike} // Pass function
+                    />
                 ) : (currentView === 'playlist' ? (
                     <PlaylistPage
                         playlist={playlists.find(p => p.id === activePlaylistId)}
@@ -707,9 +807,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                                     setIsPlaying(true);
                                     mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                                 },
+                                onNavigate: handleNavigate, // <--- CRITICAL UPDATE
+                                onToggleLike: toggleLike
                             };
-                            return React.cloneElement(child, injectedProps as any);
-                        }
+                            return React.cloneElement(child, injectedProps as any);}
                         return child;
                     })
                 ))}
@@ -719,6 +820,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                 <>
                     <PlayerBar
                         currentSong={currentSong}
+                        onToggleLike={toggleLike}
                         isPlaying={isPlaying}
                         setIsPlaying={setIsPlaying}
                         progress={progress}

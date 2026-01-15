@@ -14,7 +14,7 @@ interface MainSidebarProps {
     visible: boolean;
     setVisible: (v: boolean) => void;
     playlists: Playlist[];
-    onNavigate: (view: 'home' | 'library' | 'explore' | 'playlist') => void;
+    onNavigate: (view: 'home' | 'library' | 'explore' | 'favorites' | 'playlist') => void;
     handlePlaylistClick: (playlistId: number) => void;
     onCreatePlaylist: () => void; // ADDED: New prop
     activePlaylistId: number | null;
@@ -109,10 +109,14 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                 <div className="custom-nav-item mt-2" onClick={onCreatePlaylist}>
                     <AddBoxOutlinedIcon fontSize="inherit" /> <span>Create Playlist</span>
                 </div>
-                <div className="custom-nav-item">
+                <div
+                    className={`custom-nav-item ${currentView === 'favorites' ? 'active' : ''}`}
+                    onClick={() => onNavigate('favorites')}
+                >
                     <FavoriteOutlinedIcon fontSize="inherit" /> <span>Favorite Songs</span>
                 </div>
             </div>
+
         </Sidebar>
     );
 };

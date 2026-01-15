@@ -38,9 +38,7 @@ public class ProfileService {
 
         boolean isOwner = viewerId != null && viewerId.equals(userId);
 
-        List<Playlist> playlists = isOwner
-                ? playlistRepository.findByUser_Id(userId)
-                : playlistRepository.findByUser_IdAndVisibility(userId, Privacy.PUBLIC);
+        List<Playlist> playlists = playlistRepository.findByUser_IdAndVisibility(userId, Privacy.PUBLIC);
 
         List<PlaylistDTO> playlistDTOs = playlists.stream()
                 .map(playlistMapper::toDto)

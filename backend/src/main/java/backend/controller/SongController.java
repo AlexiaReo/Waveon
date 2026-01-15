@@ -35,16 +35,18 @@ public class SongController {
         return ResponseEntity.ok().build();
     }
 
-    @PreAuthorize("hasRole('ARTIST')")
+    // We validate the Artist role inside SongService to avoid environment-specific role mapping issues.
+    @PreAuthorize("isAuthenticated()")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SongDTO> createSong(
             @RequestParam("name") String name,
             @RequestParam("genre") String genre,
             @RequestPart("image") MultipartFile image,
             Authentication authentication,
-            @RequestPart("file") MultipartFile file) {
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "artistId", required = false) Long artistId) {
 
-        return ResponseEntity.ok(songService.createSong(name, genre, image, file, authentication));
+        return ResponseEntity.ok(songService.createSong(name, genre, image, file, authentication, artistId));
     }
 
     @GetMapping

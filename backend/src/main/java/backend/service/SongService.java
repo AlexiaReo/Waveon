@@ -9,6 +9,7 @@ import backend.repository.DBArtistRepository;
 import backend.repository.DBSongRepository;
 import backend.repository.DBUserRepository;
 import backend.model.User;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
@@ -24,6 +25,16 @@ import java.util.stream.Collectors;
 
 @Service
 public class SongService {
+
+    /**
+     * Public base URL for this backend (scheme + host). Used to generate absolute URLs.
+     *
+     * Examples:
+     * - Local: http://localhost:8081
+     * - Cloud Run: https://waveon-backend-xxxxx-ew.a.run.app
+     */
+    @Value("${PUBLIC_BASE_URL:http://localhost:8081}")
+    private String publicBaseUrl;
 
     private final DBSongRepository songRepository;
     private final SongMapper songMapper;
@@ -41,11 +52,12 @@ public class SongService {
 // backend.service.SongService.java
 
     public SongDTO createSong(String name,
-                             String genreName,
-                             MultipartFile image,
-                             MultipartFile file,
-                             Authentication authentication) {
-        // 1. Resolve artist name from the authenticated user (no longer sent from frontend)
+                               String genreName,
+                               MultipartFile image,
+                               MultipartFile file,
+                               Authentication authentication,
+                               Long artistId) {
+        // 1. Authenticate user
         if (authentication == null || !authentication.isAuthenticated() || authentication.getName() == null) {
             throw new RuntimeException("Unauthenticated request");
         }
@@ -54,19 +66,29 @@ public class SongService {
         User user = userRepository.findByEmail(authenticatedEmail)
                 .orElseThrow(() -> new RuntimeException("User not found for authenticated email: " + authenticatedEmail));
 
-        String artistName = user.getUsername();
-
-        // 2. Ensure an Artist exists for this username
-        Artist artist = artistRepository.findByName(artistName)
-                .orElseGet(() -> artistRepository.save(Artist.builder()
-                        .name(artistName)
-                        .followers(0L)
-                        .build()));
+        Artist artist;
+        if (artistId != null) {
+            // Use the specified artist
+            artist = artistRepository.findById(artistId)
+                    .orElseThrow(() -> new RuntimeException("Artist not found with id: " + artistId));
+        } else {
+            // Use the authenticated user's artist
+            String artistName = user.getUsername();
+            artist = artistRepository.findByName(artistName)
+                    .orElseGet(() -> artistRepository.save(Artist.builder()
+                            .name(artistName)
+                            .followers(0L)
+                            .build()));
+        }
 
         // 3. Save the audio + image files
         String audioFileName = saveAudioFile(file);
         String imageFileName = saveImageFile(image);
-        String imageUrl = "http://localhost:8081/api/songs/image/" + imageFileName;
+
+        // IMPORTANT: return an absolute URL the frontend can load from anywhere.
+        String base = (publicBaseUrl == null) ? "" : publicBaseUrl.trim();
+        if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
+        String imageUrl = base + "/api/songs/image/" + imageFileName;
 
         // 3. Map Genre
         Genre genre;

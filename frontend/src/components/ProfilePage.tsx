@@ -152,10 +152,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps)
     }, [profile?.playlists]);
 
     const playlistStats = useMemo(() => {
-        const total = profile?.playlists?.length ?? 0;
         const publicCount = profile?.playlists?.filter((p) => p.visibility === "PUBLIC").length ?? 0;
-        const privateCount = profile?.playlists?.filter((p) => p.visibility === "PRIVATE").length ?? 0;
-        return {total, publicCount, privateCount};
+        return {total: publicCount, publicCount};
     }, [profile?.playlists]);
 
     const publicPlaylists = useMemo(() => {
@@ -266,14 +264,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps)
                                             <span className="text-white/90 font-semibold">WaveOn</span>
                                             <span className="text-white/40">•</span>
                                             <span>{playlistStats.total} playlists</span>
-                                            {profile.isOwner && (
-                                                <>
-                                                    <span className="text-white/40">•</span>
-                                                    <span className="text-white/80">{playlistStats.publicCount} public</span>
-                                                    <span className="text-white/40">•</span>
-                                                    <span className="text-white/80">{playlistStats.privateCount} private</span>
-                                                </>
-                                            )}
                                         </div>
 
                                         {/* Actions */}
