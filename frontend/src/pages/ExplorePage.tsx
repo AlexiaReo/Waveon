@@ -6,9 +6,10 @@ import { MusicCard } from '../components/MusicCard';
 interface ExplorePageProps {
     songs: Song[];
     handleSongSelect: (song: Song) => void;
+    onToggleLike: (id: number) => void;
 }
 
-export const ExplorePage: React.FC<ExplorePageProps> = ({ songs, handleSongSelect }) => {
+export const ExplorePage: React.FC<ExplorePageProps> = ({ songs, handleSongSelect, onToggleLike }) => {
     // Reusing your gradients
     const cardGradients = [
         { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
@@ -29,6 +30,7 @@ export const ExplorePage: React.FC<ExplorePageProps> = ({ songs, handleSongSelec
                         song={song}
                         onSongSelect={handleSongSelect}
                         gradientStyle={cardGradients[index % cardGradients.length]}
+                        onToggleLike={onToggleLike}
                     />
                 ))}
             </div>
