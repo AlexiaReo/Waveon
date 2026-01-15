@@ -1,6 +1,7 @@
 // src/pages/LoginPage.tsx
 import React, { useState } from "react";
 import { RegisterPage} from "./RegisterPage.tsx";
+import { apiUrl } from "../config/api";
 
 interface LoginPageProps {
     onLoginSuccess: (userId: number) => void;
@@ -19,7 +20,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         setLoading(true);
 
         try {
-            const response = await fetch("http://localhost:8081/api/auth/login", {
+            const response = await fetch(apiUrl("/auth/login"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, password }), // <-- send email

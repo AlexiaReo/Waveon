@@ -1,4 +1,6 @@
-export const authFetch = (url: string, options: RequestInit = {}) => {
+import { apiUrl } from "../config/api";
+
+export const authFetch = (path: string, options: RequestInit = {}) => {
     const token = sessionStorage.getItem("authToken");
 
     const headers: Record<string, string> = {
@@ -11,7 +13,7 @@ export const authFetch = (url: string, options: RequestInit = {}) => {
         headers["Authorization"] = `Bearer ${token}`;
     }
 
-    return fetch(url, {
+    return fetch(apiUrl(path), {
         ...options,
         headers,
     });

@@ -1,6 +1,14 @@
 import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {Button} from "primereact/button";
+import { apiUrl } from "../config/api";
+
+interface SongDTO {
+    id: number;
+    name: string;
+    genre: string;
+    imageUrl: string;
+}
 
 interface UserDTO {
     id: number;
@@ -41,10 +49,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps)
     const [actionsOpen, setActionsOpen] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
 
+    const [activeTab, setActiveTab] = useState<'playlists' | 'my-songs'>('playlists');
+    const [mySongs, setMySongs] = useState<SongDTO[]>([]);
+    const [mySongsLoading, setMySongsLoading] = useState(false);
+    const [mySongsError, setMySongsError] = useState<string | null>(null);
+
     const profileUrl = useMemo(() => {
         const params = new URLSearchParams();
         params.set("viewerId", String(viewerId));
-        return `http://localhost:8081/api/users/${userId}/profile?${params.toString()}`;
+        return apiUrl(`/users/${userId}/profile?${params.toString()}`);
     }, [userId, viewerId]);
 
     useEffect(() => {
@@ -78,6 +91,60 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps)
             cancelled = true;
         };
     }, [profileUrl]);
+
+    const canShowMySongs = Boolean(profile?.isOwner && isArtist);
+
+    const fetchMySongs = async () => {
+        const token = sessionStorage.getItem("authToken");
+        if (!token) {
+            setMySongsError("Missing auth token. Please log in again.");
+            return;
+        }
+
+        setMySongsLoading(true);
+        setMySongsError(null);
+        try {
+            const res = await fetch(apiUrl("/songs/me"), {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                const text = await res.text().catch(() => "");
+                throw new Error(`${res.status} ${res.statusText}${text ? `: ${text}` : ""}`);
+            }
+            const data: SongDTO[] = await res.json();
+            setMySongs(data);
+        } catch (e: unknown) {
+            setMySongsError(e instanceof Error ? e.message : "Failed to load My Songs");
+        } finally {
+            setMySongsLoading(false);
+        }
+    };
+
+    const handleDeleteMySong = async (songId: number) => {
+        const ok = window.confirm("Delete this song? This will remove it from WaveOn and delete the uploaded files.");
+        if (!ok) return;
+
+        const token = sessionStorage.getItem("authToken");
+        if (!token) {
+            setMySongsError("Missing auth token. Please log in again.");
+            return;
+        }
+
+        try {
+            const res = await fetch(apiUrl(`/songs/${songId}`), {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (!res.ok && res.status !== 204) {
+                const text = await res.text().catch(() => "");
+                throw new Error(`${res.status} ${res.statusText}${text ? `: ${text}` : ""}`);
+            }
+            // Optimistic update + refresh
+            setMySongs(prev => prev.filter(s => s.id !== songId));
+        } catch (e: unknown) {
+            setMySongsError(e instanceof Error ? e.message : "Failed to delete song");
+        }
+    };
 
     const headerImageUrl = useMemo(() => {
         const first = profile?.playlists?.[0]?.imageUrl;
@@ -280,127 +347,217 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps)
 
                     {/* Content */}
                     <section className="max-w-6xl mx-auto px-6 pb-10">
-                        {/* Public playlists row */}
-                        <div className="mt-6">
-                            <div className="flex items-end justify-between mb-3">
-                                <div>
-                                    <h2 className="text-xl font-bold">Public Playlists</h2>
-                                    <div className="text-sm text-gray-400">Visible to everyone</div>
-                                </div>
-                                <div className="text-sm text-gray-400">{publicPlaylists.length} total</div>
-                            </div>
 
-                            <div className="flex gap-4 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                                {publicPlaylists.map((p) => (
-                                    <div
-                                        key={p.id}
-                                        className="group bg-[#181818] hover:bg-[#282828] transition-colors rounded-xl p-4 cursor-pointer flex-shrink-0 w-44 sm:w-48"
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => onOpenPlaylist(p.id)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter" || e.key === " ") onOpenPlaylist(p.id);
-                                        }}
-                                    >
-                                        <div className="relative">
-                                            <img
-                                                src={p.imageUrl}
-                                                alt={p.title}
-                                                className="w-full aspect-square object-cover rounded-lg shadow-lg"
-                                            />
-                                            <div className="absolute right-2 bottom-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-                                                <button
-                                                    className="w-11 h-11 rounded-full bg-[#1db954] text-black shadow-2xl flex items-center justify-center"
-                                                    aria-label={`Open ${p.title}`}
-                                                    type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        onOpenPlaylist(p.id);
-                                                    }}
-                                                >
-                                                    <i className="pi pi-play" />
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div className="mt-3">
-                                            <div className="font-semibold truncate" title={p.title}>{p.title}</div>
-                                            <div className="text-sm text-gray-400 mt-1 line-clamp-2">
-                                                {p.description || "Public playlist"}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-
-                                {publicPlaylists.length === 0 && (
-                                    <div className="text-gray-400">No public playlists.</div>
-                                )}
-                            </div>
+                        {/* Tabs */}
+                        <div className="mt-6 flex items-center gap-3 border-b border-white/10 pb-3">
+                            <button
+                                type="button"
+                                className={`px-4 py-2 rounded-full text-sm ${activeTab === 'playlists' ? 'bg-white/10 text-white' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                                onClick={() => setActiveTab('playlists')}
+                            >
+                                Playlists
+                            </button>
+                            {canShowMySongs && (
+                                <button
+                                    type="button"
+                                    className={`px-4 py-2 rounded-full text-sm ${activeTab === 'my-songs' ? 'bg-white/10 text-white' : 'text-gray-300 hover:text-white hover:bg-white/5'}`}
+                                    onClick={() => {
+                                        setActiveTab('my-songs');
+                                        // Lazy-load the first time
+                                        if (mySongs.length === 0 && !mySongsLoading) {
+                                            void fetchMySongs();
+                                        }
+                                    }}
+                                >
+                                    My Songs
+                                </button>
+                            )}
                         </div>
 
-                        {/* Private playlists row (owner only) */}
-                        {profile.isOwner && (
-                            <div className="mt-10">
+                        {activeTab === 'my-songs' && canShowMySongs ? (
+                            <div className="mt-6">
                                 <div className="flex items-end justify-between mb-3">
                                     <div>
-                                        <h2 className="text-xl font-bold">Private Playlists</h2>
-                                        <div className="text-sm text-gray-400">Only visible to you</div>
+                                        <h2 className="text-xl font-bold">My Songs</h2>
+                                        <div className="text-sm text-gray-400">Tracks you uploaded as an Artist</div>
                                     </div>
-                                    <div className="text-sm text-gray-400">{privatePlaylists.length} total</div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            label="Refresh"
+                                            icon="pi pi-refresh"
+                                            className="p-button-text"
+                                            onClick={() => void fetchMySongs()}
+                                        />
+                                        <div className="text-sm text-gray-400">{mySongs.length} total</div>
+                                    </div>
                                 </div>
 
-                                <div className="flex gap-4 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                                    {privatePlaylists.map((p) => (
-                                        <div
-                                            key={p.id}
-                                            className="group bg-[#181818] hover:bg-[#282828] transition-colors rounded-xl p-4 cursor-pointer flex-shrink-0 w-44 sm:w-48"
-                                            role="button"
-                                            tabIndex={0}
-                                            onClick={() => onOpenPlaylist(p.id)}
-                                            onKeyDown={(e) => {
-                                                if (e.key === "Enter" || e.key === " ") onOpenPlaylist(p.id);
-                                            }}
-                                        >
-                                            <div className="relative">
-                                                <img
-                                                    src={p.imageUrl}
-                                                    alt={p.title}
-                                                    className="w-full aspect-square object-cover rounded-lg shadow-lg"
-                                                />
-                                                <div className="absolute right-2 bottom-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
-                                                    <button
-                                                        className="w-11 h-11 rounded-full bg-[#1db954] text-black shadow-2xl flex items-center justify-center"
-                                                        aria-label={`Open ${p.title}`}
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onOpenPlaylist(p.id);
-                                                        }}
-                                                    >
-                                                        <i className="pi pi-play" />
-                                                    </button>
+                                {mySongsLoading && (
+                                    <div className="text-gray-300">Loading…</div>
+                                )}
+
+                                {!mySongsLoading && mySongsError && (
+                                    <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+                                        <div className="font-semibold">Failed to load My Songs</div>
+                                        <div className="text-sm text-red-200 mt-1">{mySongsError}</div>
+                                    </div>
+                                )}
+
+                                {!mySongsLoading && !mySongsError && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {mySongs.map((s) => (
+                                            <div key={s.id} className="bg-[#181818] rounded-xl p-4 border border-white/5">
+                                                <div className="flex items-center gap-3">
+                                                    <img
+                                                        src={s.imageUrl}
+                                                        alt={s.name}
+                                                        className="w-14 h-14 rounded-lg object-cover bg-black/30"
+                                                    />
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="font-semibold truncate" title={s.name}>{s.name}</div>
+                                                    </div>
+                                                </div>
+                                                <div className="mt-3 flex justify-end">
+                                                    <Button
+                                                        label="Delete"
+                                                        icon="pi pi-trash"
+                                                        className="p-button-danger p-button-text"
+                                                        onClick={() => void handleDeleteMySong(s.id)}
+                                                    />
                                                 </div>
                                             </div>
-
-                                            <div className="mt-3">
-                                                <div className="font-semibold truncate" title={p.title}>{p.title}</div>
-                                                <div className="text-sm text-gray-400 mt-1 line-clamp-2">
-                                                    {p.description || "Private playlist"}
-                                                </div>
-                                                <div className="mt-2">
-                                                    <span className="text-[11px] px-2 py-1 rounded-full bg-purple-900/30 border border-purple-700/60 text-purple-200">
-                                                        PRIVATE
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {privatePlaylists.length === 0 && (
-                                        <div className="text-gray-400">No private playlists.</div>
-                                    )}
-                                </div>
+                                        ))}
+                                        {mySongs.length === 0 && (
+                                            <div className="text-gray-400">No uploaded songs yet.</div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
+                        ) : (
+                            <>
+                                {/* Public playlists row */}
+                                <div className="mt-6">
+                                    <div className="flex items-end justify-between mb-3">
+                                        <div>
+                                            <h2 className="text-xl font-bold">Public Playlists</h2>
+                                            <div className="text-sm text-gray-400">Visible to everyone</div>
+                                        </div>
+                                        <div className="text-sm text-gray-400">{publicPlaylists.length} total</div>
+                                    </div>
+
+                                    <div className="flex gap-4 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                        {publicPlaylists.map((p) => (
+                                            <div
+                                                key={p.id}
+                                                className="group bg-[#181818] hover:bg-[#282828] transition-colors rounded-xl p-4 cursor-pointer flex-shrink-0 w-44 sm:w-48"
+                                                role="button"
+                                                tabIndex={0}
+                                                onClick={() => onOpenPlaylist(p.id)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Enter" || e.key === " ") onOpenPlaylist(p.id);
+                                                }}
+                                            >
+                                                <div className="relative">
+                                                    <img
+                                                        src={p.imageUrl}
+                                                        alt={p.title}
+                                                        className="w-full aspect-square object-cover rounded-lg shadow-lg"
+                                                    />
+                                                    <div className="absolute right-2 bottom-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
+                                                        <button
+                                                            className="w-11 h-11 rounded-full bg-[#1db954] text-black shadow-2xl flex items-center justify-center"
+                                                            aria-label={`Open ${p.title}`}
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                onOpenPlaylist(p.id);
+                                                            }}
+                                                        >
+                                                            <i className="pi pi-play" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="mt-3">
+                                                    <div className="font-semibold truncate" title={p.title}>{p.title}</div>
+                                                    <div className="text-sm text-gray-400 mt-1 line-clamp-2">
+                                                        {p.description || "Public playlist"}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {publicPlaylists.length === 0 && (
+                                            <div className="text-gray-400">No public playlists.</div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Private playlists row (owner only) */}
+                                {profile.isOwner && (
+                                    <div className="mt-10">
+                                        <div className="flex items-end justify-between mb-3">
+                                            <div>
+                                                <h2 className="text-xl font-bold">Private Playlists</h2>
+                                                <div className="text-sm text-gray-400">Only visible to you</div>
+                                            </div>
+                                            <div className="text-sm text-gray-400">{privatePlaylists.length} total</div>
+                                        </div>
+
+                                        <div className="flex gap-4 overflow-x-auto pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                                            {privatePlaylists.map((p) => (
+                                                <div
+                                                    key={p.id}
+                                                    className="group bg-[#181818] hover:bg-[#282828] transition-colors rounded-xl p-4 cursor-pointer flex-shrink-0 w-44 sm:w-48"
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => onOpenPlaylist(p.id)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter" || e.key === " ") onOpenPlaylist(p.id);
+                                                    }}
+                                                >
+                                                    <div className="relative">
+                                                        <img
+                                                            src={p.imageUrl}
+                                                            alt={p.title}
+                                                            className="w-full aspect-square object-cover rounded-lg shadow-lg"
+                                                        />
+                                                        <div className="absolute right-2 bottom-2 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all">
+                                                            <button
+                                                                className="w-11 h-11 rounded-full bg-[#1db954] text-black shadow-2xl flex items-center justify-center"
+                                                                aria-label={`Open ${p.title}`}
+                                                                type="button"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    onOpenPlaylist(p.id);
+                                                                }}
+                                                            >
+                                                                <i className="pi pi-play" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="mt-3">
+                                                        <div className="font-semibold truncate" title={p.title}>{p.title}</div>
+                                                        <div className="text-sm text-gray-400 mt-1 line-clamp-2">
+                                                            {p.description || "Private playlist"}
+                                                        </div>
+                                                        <div className="mt-2">
+                                                            <span className="text-[11px] px-2 py-1 rounded-full bg-purple-900/30 border border-purple-700/60 text-purple-200">
+                                                                PRIVATE
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            {privatePlaylists.length === 0 && (
+                                                <div className="text-gray-400">No private playlists.</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </section>
                     </>

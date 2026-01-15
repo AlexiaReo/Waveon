@@ -1,2 +1,11 @@
 /.idea/
 .env
+
+# Firebase local build/cache
+.firebase/
+
+# User uploaded media (local/dev)
+backend/uploads/
+
+# Frontend environment (keep secrets out of git)
+frontend/.env.production
