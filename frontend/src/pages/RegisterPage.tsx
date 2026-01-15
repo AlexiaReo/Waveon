@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiUrl } from "../config/api";
 
 interface RegisterPageProps {
     onRegisterSuccess: () => void; // callback to go back to login
@@ -18,7 +19,7 @@ export const RegisterPage = ({ onRegisterSuccess }: RegisterPageProps) => {
         setError(null);
 
         try {
-            const response = await fetch("http://localhost:8081/api/auth/register", {
+            const response = await fetch(apiUrl("/auth/register"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username, email, password, role }),

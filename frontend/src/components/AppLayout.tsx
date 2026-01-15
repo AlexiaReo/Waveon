@@ -20,6 +20,7 @@ import {StudyModeOverlay} from "./StudyModeOverlay.tsx"; [StudyModeOverlay];
 import { ExplorePage } from '../pages/ExplorePage';
 import { FavoritesPage } from '../pages/FavoritesPage';
 import { DiscoveryMap} from "../pages/DiscoveryMap.tsx";
+import { apiUrl } from "../config/api";
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -34,6 +35,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     const [search, setSearch] = useState<string>("");
     const toast = useRef<Toast>(null);
 
+    const normalizeSongs = (data: any[]): Song[] => {
+        // Ensure we never render invalid entries, and show newest-first.
+        // This matters because the Home page uses slices (e.g. `filteredSongs.slice(0, 16)`),
+        // so newly uploaded songs must appear at the front.
+        return (data || [])
+            .filter((s: any) => s?.id != null)
+            .sort((a: any, b: any) => Number(b.id) - Number(a.id));
+    };
 
     // View Management
     const [currentView, setCurrentView] = useState<
@@ -108,7 +117,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         const targetId = userId || (storedUserId ? parseInt(storedUserId) : null);
 
         if (token && targetId) {
-            authFetch(`http://localhost:8081/api/users/${targetId}`)
+            authFetch(`/users/${targetId}`)
                 .then(res => {
                     if (!res.ok) throw new Error("Failed to fetch user");
                     return res.json();
@@ -136,6 +145,15 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     const handleArtistUpload = async (formData: FormData) => {
         try {
             const token = sessionStorage.getItem("authToken");
+            if (!token) {
+                toast.current?.show({
+                    severity: 'warn',
+                    summary: 'Not logged in',
+                    detail: 'Please log in as an Artist to publish songs.',
+                    life: 3500
+                });
+                return false;
+            }
             const response = await fetch("http://localhost:8081/api/songs", {
                 method: "POST",
                 headers: {
@@ -146,7 +164,20 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
             });
 
             if (response.ok) {
-                // ... your existing refresh logic ...
+                // Refresh global songs so the upload becomes visible immediately.
+                try {
+                    const songsRes = await fetch(apiUrl("/songs"));
+                    if (songsRes.ok) {
+                        const data = await songsRes.json();
+                        const validSongs = normalizeSongs(data);
+                        setAllSongs(validSongs);
+                        // Keep the UI list fresh regardless of current view.
+                        // (Otherwise you can upload from Artist Studio and not see it later until a reload.)
+                        setCurrentFilteredSongs(validSongs);
+                    }
+                } catch {
+                    // Non-fatal: upload succeeded, but refresh failed.
+                }
 
                 // TRIGGER THE TOAST SUCCESS
                 toast.current?.show({
@@ -157,11 +188,36 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                 });
                 return true;
             } else {
+                // Spring often returns empty body for 401/403, so include status as a fallback.
+                const errText = await response.text().catch(() => "");
+
+                if (response.status === 401) {
+                    toast.current?.show({
+                        severity: 'warn',
+                        summary: 'Session expired',
+                        detail: 'Please log in again, then retry publishing your song.',
+                        life: 4500
+                    });
+                    return false;
+                }
+
+                if (response.status === 403) {
+                    toast.current?.show({
+                        severity: 'warn',
+                        summary: 'Artist-only action',
+                        detail: 'Only Artists can publish songs. Go to Profile → “Become Artist”, then retry.',
+                        life: 5500
+                    });
+                    return false;
+                }
+
                 // TRIGGER THE TOAST ERROR
                 toast.current?.show({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Artist not found or upload failed.',
+                    detail: errText
+                        ? `Upload failed (${response.status}): ${errText}`
+                        : `Upload failed (${response.status}).`,
                     life: 4000
                 });
                 return false;
@@ -196,13 +252,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
 
     const handleStudySwitch = (mode: 'STUDY' | 'BREAK' | 'REGULAR') => {
         const url = mode === 'STUDY'
-            ? "http://localhost:8081/api/songs/genre/STUDY"
-            : "http://localhost:8081/api/songs";
+            ? apiUrl("/songs/genre/STUDY")
+            : apiUrl("/songs");
 
         fetch(url) // Public songs fetch
             .then(res => res.json())
             .then(data => {
-                const validSongs = data.filter((s: any) => s?.id != null);
+                const validSongs = normalizeSongs(data);
                 setCurrentFilteredSongs(validSongs);
                 if (validSongs.length > 0) setCurrentSong(validSongs[0]);
             });
@@ -217,7 +273,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
             return;
         }
 
-        authFetch("http://localhost:8081/api/playlists", {
+        authFetch("/playlists", {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(res => res.ok ? res.json() : [])
@@ -228,30 +284,31 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         // 1. Fetch Playlists (Will return empty/403 until logged in, which is fine)
         fetchPlaylists();
 
-        //for fetch liked songs also
+        // 2. Fetch songs + liked-songs (if logged in) and merge into a single list.
         const fetchSongsAndLikes = async () => {
             try {
-                // A. Fetch All Songs
-                const songsResponse = await fetch("http://localhost:8081/api/songs");
-                const allSongsData = await songsResponse.json();
+                // A. Fetch all songs (public)
+                const songsResponse = await fetch(apiUrl("/songs"));
+                if (!songsResponse.ok) {
+                    throw new Error(`Failed to fetch songs: ${songsResponse.status} ${songsResponse.statusText}`);
+                }
+                const allSongsData: any[] = await songsResponse.json();
 
-                // B. Fetch Liked Songs (Only if user is logged in)
-                let likedSongIds = new Set<number>();
+                // B. Fetch liked songs (only when logged in)
+                const likedSongIds = new Set<number>();
                 if (userId) {
-                    const likesResponse = await authFetch(`http://localhost:8081/api/songs/like?userId=${userId}`);
+                    const likesResponse = await authFetch(`/songs/like?userId=${userId}`);
                     if (likesResponse.ok) {
                         const likedSongsData: Song[] = await likesResponse.json();
-                        // Create a Set of IDs for fast lookup
                         likedSongsData.forEach(s => likedSongIds.add(s.id));
                     }
                 }
 
-                // C. MERGE THEM: Add 'isLiked: true' if the song is in the liked list
-                const mergedSongs = allSongsData
-                    .filter((s: any) => s?.id != null)
+                // C. Merge: mark isLiked for fast UI rendering
+                const mergedSongs: Song[] = normalizeSongs(allSongsData)
                     .map((s: Song) => ({
                         ...s,
-                        isLiked: likedSongIds.has(s.id) // <--- THIS IS THE MAGIC
+                        isLiked: likedSongIds.has(s.id)
                     }));
 
                 setAllSongs(mergedSongs);
@@ -260,7 +317,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                 if (mergedSongs.length > 0 && !currentSong) {
                     setCurrentSong(mergedSongs[0]);
                 }
-
             } catch (error) {
                 console.error("Error fetching songs:", error);
             }
@@ -271,7 +327,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
 
     useEffect(() => {
         if (currentView === 'library') {
-            authFetch(`http://localhost:8081/api/users/${userId}/library`)
+            authFetch(`/users/${userId}/library`)
                 .then(res => {
                     if (!res.ok) throw new Error("Failed to fetch library");
                     return res.json();
@@ -451,7 +507,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         }
 
         try {
-            const res = await fetch(`http://localhost:8081/api/users/${effectiveUserId}/become-artist`, {
+            const res = await fetch(apiUrl(`/users/${effectiveUserId}/become-artist`), {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -498,7 +554,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         }
     };
 
-<<<<<<< HEAD
     const handleGenreDiscovery = async (genreName: string, genreSongs: Song[]) => {
         const token = sessionStorage.getItem("authToken");
         const targetTitle = `Your ${genreName} Playlist`;
@@ -601,8 +656,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         }
     }, [playlists]);
 
-=======
->>>>>>> e3edaee (Add edit profile menu with become-artist + logout)
     const handleOpenCreatePlaylist = () => {
         setCurrentView('create-playlist');
         setActivePlaylistId(null);
@@ -625,8 +678,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         };
 
         const url = isEditing
-            ? `http://localhost:8081/api/playlists/${activePlaylistId}`
-            : "http://localhost:8081/api/playlists";
+            ? apiUrl(`/playlists/${activePlaylistId}`)
+            : apiUrl("/playlists");
 
         const method = isEditing ? "PUT" : "POST";
 
@@ -654,7 +707,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         if (!activePlaylistId) return;
 
         try {
-            const response = await fetch(`http://localhost:8081/api/playlists/${activePlaylistId}`, {
+            const response = await fetch(apiUrl(`/playlists/${activePlaylistId}`), {
                 method: "DELETE"
             });
 
@@ -679,7 +732,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         }
 
         audioRef.current.src =
-            `http://localhost:8081/api/songs/${currentSong.id}/stream`;
+            apiUrl(`/songs/${currentSong.id}/stream`);
         audioRef.current.load();
 
         if (isPlaying) {
@@ -732,6 +785,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     };
     return (
         <div className="music-platform-wrapper flex min-h-screen">
+            {/* Global notifications (used by Artist Upload + profile actions) */}
+            <Toast ref={toast} position="top-right" />
             <MainSidebar
                 visible={visible}
                 setVisible={setVisible}

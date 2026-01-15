@@ -4,29 +4,26 @@ import { InputText } from 'primereact/inputtext';
 
 export const ArtistUploadPage: React.FC<{ onUpload: (data: FormData) => Promise<boolean> }> = ({ onUpload }) => {
     const [name, setName] = useState('');
-    const [artistName, setArtistName] = useState('');
     const [genre, setGenre] = useState('');
-    const [imageUrl, setImageUrl] = useState('');
+    const [coverImage, setCoverImage] = useState<File | null>(null);
     const [file, setFile] = useState<File | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!file) return;
+        if (!file || !coverImage) return;
 
         const formData = new FormData();
         formData.append('name', name);
-        formData.append('artistName', artistName);
         formData.append('genre', genre);
-        formData.append('imageUrl', imageUrl);
+        formData.append('image', coverImage);
         formData.append('file', file);
 
         const success = await onUpload(formData);
         if (success) {
             // Just clear the form, AppLayout handles the visual notification
             setName('');
-            setArtistName('');
             setGenre('');
-            setImageUrl('');
+            setCoverImage(null);
             setFile(null);
         }
     };
@@ -36,15 +33,23 @@ export const ArtistUploadPage: React.FC<{ onUpload: (data: FormData) => Promise<
             <h2 className="text-2xl font-bold mb-4">Upload New Track</h2>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-lg">
                 <InputText placeholder="Song Name" value={name} onChange={(e) => setName(e.target.value)} />
-                <InputText placeholder="Artist Name" value={artistName} onChange={(e) => setArtistName(e.target.value)} />
                 <InputText placeholder="Genre (e.g., POP, STUDY)" value={genre} onChange={(e) => setGenre(e.target.value)} />
-                <InputText placeholder="Image URL" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+
+                <div className="flex flex-col gap-2">
+                    <label className="text-sm text-gray-400">Cover Image</label>
+                    <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setCoverImage(e.target.files?.[0] || null)}
+                        className="text-white"
+                    />
+                </div>
 
                 <div className="flex flex-col gap-2">
                     <label className="text-sm text-gray-400">Audio File (.mp3)</label>
                     <input
                         type="file"
-                        accept="audio/mp3"
+                        accept="audio/mpeg"
                         onChange={(e) => setFile(e.target.files?.[0] || null)}
                         className="text-white"
                     />

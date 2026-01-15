@@ -32,6 +32,7 @@ logging:
     org.flywaydb: INFO
 
 server:
-  port: 8081
+  # Cloud Run injects PORT (usually 8080). Locally we still default to 8081.
+  port: ${PORT:8081}
   servlet:
     context-path: /api

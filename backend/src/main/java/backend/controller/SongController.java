@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize; // ✅ ADDED
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,12 +39,12 @@ public class SongController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<SongDTO> createSong(
             @RequestParam("name") String name,
-            @RequestParam("artistName") String artistName,
             @RequestParam("genre") String genre,
-            @RequestParam("imageUrl") String imageUrl,
+            @RequestPart("image") MultipartFile image,
+            Authentication authentication,
             @RequestPart("file") MultipartFile file) {
 
-        return ResponseEntity.ok(songService.createSong(name, artistName, genre, imageUrl, file));
+        return ResponseEntity.ok(songService.createSong(name, genre, image, file, authentication));
     }
 
     @GetMapping
@@ -55,6 +56,16 @@ public class SongController {
             songs = songService.getAllSongs();
         }
         return ResponseEntity.ok(songs);
+    }
+
+    // NOTE:
+    // We intentionally require only authentication here and enforce ownership in the service.
+    // In practice this endpoint is used only by Artists (frontend-gated), but some DBs contain
+    // legacy role values that can cause `hasRole('ARTIST')` to wrongly 403.
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/me")
+    public ResponseEntity<List<SongDTO>> getMySongs(Authentication authentication) {
+        return ResponseEntity.ok(songService.getMySongs(authentication));
     }
 
     @GetMapping("/{id}")
@@ -82,10 +93,11 @@ public class SongController {
         }
     }
 
-    @PreAuthorize("hasRole('ARTIST')")
+    // Ownership is enforced in SongService.deleteSong(id, authentication)
+    @PreAuthorize("isAuthenticated()")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteSong(@PathVariable Long id) {
-        songService.deleteSong(id);
+    public ResponseEntity<Void> deleteSong(@PathVariable Long id, Authentication authentication) {
+        songService.deleteSong(id, authentication);
         return ResponseEntity.noContent().build();
     }
 
@@ -109,6 +121,35 @@ public class SongController {
 
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType("audio/mpeg"))
+                .body(resource);
+    }
+
+    @GetMapping("/image/{filename:.+}")
+    public ResponseEntity<Resource> getSongImage(@PathVariable String filename) {
+        Resource resource;
+
+        // 1) Check classpath (optional)
+        resource = new ClassPathResource("images/" + filename);
+
+        // 2) Check uploads folder
+        if (!resource.exists()) {
+            Path uploadPath = Paths.get("uploads/images").toAbsolutePath().resolve(filename);
+            resource = new FileSystemResource(uploadPath);
+        }
+
+        if (!resource.exists()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        MediaType contentType = MediaType.APPLICATION_OCTET_STREAM;
+        try {
+            String detected = java.nio.file.Files.probeContentType(resource.getFile().toPath());
+            if (detected != null) contentType = MediaType.parseMediaType(detected);
+        } catch (Exception ignored) {
+        }
+
+        return ResponseEntity.ok()
+                .contentType(contentType)
                 .body(resource);
     }
 
