@@ -26,7 +26,7 @@ function App() {
     }
     return (
         <>
-            <AppLayout userId={userId}>
+            <AppLayout userId={userId} onLogout={() => setUserId(null)}>
                 <HomePage />
             </AppLayout>
         </>

@@ -21,10 +21,11 @@ import {StudyModeOverlay} from "./StudyModeOverlay.tsx"; [StudyModeOverlay];
 interface AppLayoutProps {
     children: React.ReactNode;
     userId?: number;
+    onLogout?: () => void;
 
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
+export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout }) => {
     // --- STATE MANAGEMENT ---
     const [visible, setVisible] = useState<boolean>(true);
     const [search, setSearch] = useState<string>("");
@@ -346,6 +347,76 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         setCurrentView('profile');
     };
 
+    const handleLogout = () => {
+        sessionStorage.removeItem("authToken");
+        sessionStorage.removeItem("userId");
+        setUserRole(null);
+        setUserLibrary(null);
+        setPlaylists([]);
+        setActivePlaylistId(null);
+        setCurrentSong(null);
+        setIsPlaying(false);
+        setCurrentView('home');
+        onLogout?.();
+    };
+
+    const handleBecomeArtist = async () => {
+        if (!effectiveUserId) {
+            toast.current?.show({
+                severity: 'warn',
+                summary: 'Not logged in',
+                detail: 'Please log in again.',
+                life: 3000
+            });
+            return;
+        }
+
+        const token = sessionStorage.getItem("authToken");
+        if (!token) {
+            toast.current?.show({
+                severity: 'warn',
+                summary: 'Missing token',
+                detail: 'Please log in again.',
+                life: 3000
+            });
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8081/api/users/${effectiveUserId}/become-artist`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (!res.ok) {
+                const txt = await res.text();
+                throw new Error(`${res.status} ${res.statusText}${txt ? `: ${txt}` : ''}`);
+            }
+
+            const data: { token: string; userId: number } = await res.json();
+            sessionStorage.setItem('authToken', data.token);
+            sessionStorage.setItem('userId', String(data.userId));
+            setUserRole('ROLE_ARTIST');
+
+            toast.current?.show({
+                severity: 'success',
+                summary: 'Upgraded',
+                detail: 'Your account is now an Artist.',
+                life: 3000
+            });
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : 'Failed to become an Artist';
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: msg,
+                life: 4000
+            });
+        }
+    };
+
     const handlePlaylistClick = (playlistId: number) => {
         setActivePlaylistId(playlistId);
         setCurrentView('playlist');
@@ -358,45 +429,6 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
             setCurrentFilteredSongs([]);
         }
     };
-
-    const handlePlayPlaylist = useCallback(async (playlistId: number) => {
-        // Navigate to playlist view
-        setActivePlaylistId(playlistId);
-        setCurrentView('playlist');
-
-        // Try from already-loaded playlists first
-        const existing = playlists.find(p => p.id === playlistId);
-        if (existing?.songs?.length) {
-            setCurrentFilteredSongs(existing.songs);
-            setCurrentSong(existing.songs[0]);
-            setIsPlaying(true);
-            return;
-        }
-
-        // Fallback: fetch playlist details (including songs)
-        try {
-            const res = await authFetch(`http://localhost:8081/api/playlists/${playlistId}`);
-            if (!res.ok) throw new Error(`Failed to fetch playlist ${playlistId}`);
-            const full: Playlist = await res.json();
-
-            setPlaylists(prev => {
-                const idx = prev.findIndex(p => p.id === playlistId);
-                if (idx === -1) return [...prev, full];
-                const next = [...prev];
-                next[idx] = full;
-                return next;
-            });
-
-            const songs = full.songs ?? [];
-            setCurrentFilteredSongs(songs);
-            if (songs.length) {
-                setCurrentSong(songs[0]);
-                setIsPlaying(true);
-            }
-        } catch (e) {
-            console.error("Failed to play playlist:", e);
-        }
-    }, [playlists]);
 
     const handleOpenCreatePlaylist = () => {
         setCurrentView('create-playlist');
@@ -571,7 +603,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                         viewerId={effectiveUserId as number}
                         onBack={() => setCurrentView('home')}
                         onOpenPlaylist={(playlistId: number) => handlePlaylistClick(playlistId)}
-                        onPlayPlaylist={(playlistId: number) => void handlePlayPlaylist(playlistId)}
+                        isArtist={userRole === 'ROLE_ARTIST'}
+                        onBecomeArtist={handleBecomeArtist}
+                        onLogout={handleLogout}
                     />
                 ) : currentView === 'artist-studio' ? (
                     <ArtistUploadPage onUpload={handleArtistUpload} />
