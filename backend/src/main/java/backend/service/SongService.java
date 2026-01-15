@@ -35,10 +35,18 @@ public class SongService {
 // backend.service.SongService.java
 
     public SongDTO createSong(String name, String artistName, String genreName, String imageUrl, MultipartFile file) {
-        // 1. Validate Artist exists by name
+        // 1. Validate Artist exists by name or create it
         Artist artist = artistRepository.findByName(artistName)
-                .orElseThrow(() -> new RuntimeException("Artist not found with name: " + artistName));
+                .orElseGet(() -> {
+                    Artist newArtist = new Artist();
+                    newArtist.setName(artistName);
+                    return newArtist;
+                });
+        if (imageUrl != null && !imageUrl.isBlank()) {
+            artist.setImageUrl(imageUrl);
+        }
 
+        artistRepository.save(artist);
         // 2. Save the file to your resources folder
         String fileName = saveFile(file);
 

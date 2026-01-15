@@ -6,11 +6,20 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 interface MusicCardProps {
     song: Song;
     onSongSelect: (song: Song) => void;
+    onArtistClick?: (artistId: number) => void;
     gradientStyle: React.CSSProperties;
     onToggleLike: (id: number) => void;
 }
 
-export const MusicCard: React.FC<MusicCardProps> = ({ song, onSongSelect, gradientStyle, onToggleLike}) => {
+export const MusicCard: React.FC<MusicCardProps> = ({ song, onSongSelect, onArtistClick, gradientStyle, onToggleLike}) => {
+    const handleArtistClick = (e: React.MouseEvent) => {
+        // Prevent the card's main onClick (onSongSelect) from firing
+        e.stopPropagation();
+
+        if (onArtistClick && song.artist?.id) {
+            onArtistClick(song.artist.id);
+        }
+    };
     return (
         <div className="music-card group relative" onClick={() => onSongSelect(song)}>
             {/* 1. Card Image */}
@@ -33,6 +42,7 @@ export const MusicCard: React.FC<MusicCardProps> = ({ song, onSongSelect, gradie
                 <p
                     className="card-subtitle truncate flex-1"
                     title={song.artist?.name}
+                    onClick={handleArtistClick}
                     style={{ margin: 0, paddingRight: '8px' }} // Add padding so text doesn't hit the heart
                 >
                     {song.artist?.name || "Unknown Artist"}
