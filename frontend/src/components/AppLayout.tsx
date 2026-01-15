@@ -24,10 +24,11 @@ import { DiscoveryMap} from "../pages/DiscoveryMap.tsx";
 interface AppLayoutProps {
     children: React.ReactNode;
     userId?: number;
+    onLogout?: () => void;
 
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
+export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout }) => {
     // --- STATE MANAGEMENT ---
     const [visible, setVisible] = useState<boolean>(true);
     const [search, setSearch] = useState<string>("");
@@ -414,6 +415,76 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         setCurrentView('profile');
     };
 
+    const handleLogout = () => {
+        sessionStorage.removeItem("authToken");
+        sessionStorage.removeItem("userId");
+        setUserRole(null);
+        setUserLibrary(null);
+        setPlaylists([]);
+        setActivePlaylistId(null);
+        setCurrentSong(null);
+        setIsPlaying(false);
+        setCurrentView('home');
+        onLogout?.();
+    };
+
+    const handleBecomeArtist = async () => {
+        if (!effectiveUserId) {
+            toast.current?.show({
+                severity: 'warn',
+                summary: 'Not logged in',
+                detail: 'Please log in again.',
+                life: 3000
+            });
+            return;
+        }
+
+        const token = sessionStorage.getItem("authToken");
+        if (!token) {
+            toast.current?.show({
+                severity: 'warn',
+                summary: 'Missing token',
+                detail: 'Please log in again.',
+                life: 3000
+            });
+            return;
+        }
+
+        try {
+            const res = await fetch(`http://localhost:8081/api/users/${effectiveUserId}/become-artist`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+
+            if (!res.ok) {
+                const txt = await res.text();
+                throw new Error(`${res.status} ${res.statusText}${txt ? `: ${txt}` : ''}`);
+            }
+
+            const data: { token: string; userId: number } = await res.json();
+            sessionStorage.setItem('authToken', data.token);
+            sessionStorage.setItem('userId', String(data.userId));
+            setUserRole('ROLE_ARTIST');
+
+            toast.current?.show({
+                severity: 'success',
+                summary: 'Upgraded',
+                detail: 'Your account is now an Artist.',
+                life: 3000
+            });
+        } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : 'Failed to become an Artist';
+            toast.current?.show({
+                severity: 'error',
+                summary: 'Error',
+                detail: msg,
+                life: 4000
+            });
+        }
+    };
+
     const handlePlaylistClick = (playlistId: number) => {
         setActivePlaylistId(playlistId);
         setCurrentView('playlist');
@@ -427,6 +498,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         }
     };
 
+<<<<<<< HEAD
     const handleGenreDiscovery = async (genreName: string, genreSongs: Song[]) => {
         const token = sessionStorage.getItem("authToken");
         const targetTitle = `Your ${genreName} Playlist`;
@@ -529,6 +601,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         }
     }, [playlists]);
 
+=======
+>>>>>>> e3edaee (Add edit profile menu with become-artist + logout)
     const handleOpenCreatePlaylist = () => {
         setCurrentView('create-playlist');
         setActivePlaylistId(null);
@@ -734,7 +808,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                         viewerId={effectiveUserId as number}
                         onBack={() => setCurrentView('home')}
                         onOpenPlaylist={(playlistId: number) => handlePlaylistClick(playlistId)}
-                        onPlayPlaylist={(playlistId: number) => void handlePlayPlaylist(playlistId)}
+                        isArtist={userRole === 'ROLE_ARTIST'}
+                        onBecomeArtist={handleBecomeArtist}
+                        onLogout={handleLogout}
                     />
                 ) : currentView === 'artist-studio' ? (
                     <ArtistUploadPage onUpload={handleArtistUpload} />

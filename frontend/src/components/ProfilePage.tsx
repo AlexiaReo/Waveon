@@ -28,15 +28,18 @@ interface ProfilePageProps {
     viewerId: number;
     onBack: () => void;
     onOpenPlaylist: (playlistId: number) => void;
-    onPlayPlaylist: (playlistId: number) => void;
+    isArtist: boolean;
+    onBecomeArtist: () => void;
+    onLogout: () => void;
 }
 
 export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps) => {
-    const { userId, viewerId, onBack, onOpenPlaylist, onPlayPlaylist } = props;
+    const { userId, viewerId, onBack, onOpenPlaylist, isArtist, onBecomeArtist, onLogout } = props;
     const [profile, setProfile] = useState<UserProfileDTO | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [actionsOpen, setActionsOpen] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
 
     const profileUrl = useMemo(() => {
         const params = new URLSearchParams();
@@ -96,13 +99,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps)
         return (profile?.playlists ?? []).filter((p) => p.visibility === "PRIVATE");
     }, [profile?.playlists]);
 
-    const firstPlaylistId = profile?.playlists?.[0]?.id;
-
-    const handlePlay = () => {
-        if (firstPlaylistId == null) return;
-        onPlayPlaylist(firstPlaylistId);
-    };
-
     const handleCopyProfileLink = async () => {
         try {
             await navigator.clipboard.writeText(window.location.href);
@@ -121,6 +117,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps)
         } finally {
             setActionsOpen(false);
         }
+    };
+
+    const handleEditToggle = () => setEditOpen((v) => !v);
+
+    const handleBecomeArtistClick = async () => {
+        setEditOpen(false);
+        await Promise.resolve(onBecomeArtist());
+    };
+
+    const handleLogoutClick = () => {
+        setEditOpen(false);
+        onLogout();
     };
 
     return (
@@ -203,14 +211,39 @@ export const ProfilePage: React.FC<ProfilePageProps> = (props: ProfilePageProps)
 
                                         {/* Actions */}
                                         <div className="mt-6 flex items-center gap-3">
-                                            <Button
-                                                label="Play"
-                                                icon="pi pi-play"
-                                                className="p-button-rounded"
-                                                style={{backgroundColor: "#1db954", borderColor: "#1db954"}}
-                                                onClick={handlePlay}
-                                                disabled={!firstPlaylistId}
-                                            />
+                                            {profile.isOwner && (
+                                                <div className="relative">
+                                                    <Button
+                                                        label="Edit Profile"
+                                                        icon="pi pi-user-edit"
+                                                        className="p-button-rounded"
+                                                        style={{backgroundColor: "#1db954", borderColor: "#1db954"}}
+                                                        onClick={handleEditToggle}
+                                                    />
+                                                    {editOpen && (
+                                                        <div
+                                                            className="absolute left-0 mt-2 w-56 rounded-lg border border-white/10 bg-[#1e1e1e] shadow-xl z-50"
+                                                            role="menu"
+                                                        >
+                                                            <button
+                                                                type="button"
+                                                                className={`w-full text-left px-4 py-3 text-sm hover:bg-white/10 ${isArtist ? 'text-white/40 cursor-not-allowed' : 'text-white'}`}
+                                                                onClick={isArtist ? undefined : handleBecomeArtistClick}
+                                                                disabled={isArtist}
+                                                            >
+                                                                Become an Artist
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10"
+                                                                onClick={handleLogoutClick}
+                                                            >
+                                                                Logout
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
                                             <div className="relative">
                                                 <Button
                                                     icon="pi pi-ellipsis-h"
