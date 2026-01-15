@@ -1,8 +1,9 @@
-import {useMemo, useState} from "react";
+import {useEffect, useMemo, useState} from "react";
 import {HomePage} from "./components/HomePage.tsx";
 import {ProfilePage} from "./components/ProfilePage.tsx";
 import {PlaylistPage} from "./components/PlaylistPage.tsx";
 import {PrimeReactProvider} from "primereact/api";
+import { LoginPage } from "./pages/LoginPage.tsx";
 
 import 'primereact/resources/themes/md-dark-deeppurple/theme.css';
 import 'primeicons/primeicons.css'; //icons
@@ -13,11 +14,28 @@ import './App.css'
 function App() {
     const [view, setView] = useState<"home" | "profile" | "playlist">("home");
     const [selectedPlaylistId, setSelectedPlaylistId] = useState<number | null>(null);
+    const [userId, setUserId] = useState<number | null>(null);
 
-    // Temporary until authentication exists in the app.!!!!!!!
-    const currentUserId = 2;
+    useEffect(() => {
+        const token = sessionStorage.getItem("authToken");
+        const storedUserId = sessionStorage.getItem("userId");
+        if (token && storedUserId) {
+            setUserId(Number(storedUserId));
+        }
+    }, []);
 
-    const profileUserId = useMemo(() => currentUserId, [currentUserId]);
+    if (!userId) {
+        return (
+            <PrimeReactProvider>
+                <LoginPage onLoginSuccess={(id) => {
+                    setUserId(id);
+                    setView("home");
+                }} />
+            </PrimeReactProvider>
+        );
+    }
+
+    const profileUserId = useMemo(() => userId, [userId]);
 
     return (
         <>
@@ -28,7 +46,7 @@ function App() {
                 {view === "profile" && (
                     <ProfilePage
                         userId={profileUserId}
-                        viewerId={currentUserId}
+                        viewerId={userId}
                         onBack={() => setView("home")}
                         onOpenPlaylist={(playlistId) => {
                             setSelectedPlaylistId(playlistId);

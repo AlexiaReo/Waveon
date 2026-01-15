@@ -45,7 +45,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({userId, viewerId, onBac
         setLoading(true);
         setError(null);
 
-        fetch(profileUrl)
+        const token = sessionStorage.getItem("authToken");
+        const headers: Record<string, string> = {};
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
+        fetch(profileUrl, { headers })
             .then(async (res) => {
                 if (!res.ok) {
                     const text = await res.text();
