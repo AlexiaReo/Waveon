@@ -155,6 +155,32 @@ firebase deploy --only hosting
 When asked for the public directory, use `frontend/dist` (matches [`firebase.json`](firebase.json:1)).
 Also enable “single-page app rewrite” (already configured, but keep consistent).
 
+## 2.4 Auto-deploy Hosting from GitHub `main` (Firebase Console integration)
+
+If you want Hosting to automatically update when your GitHub `main` branch changes, use Firebase’s official GitHub integration.
+
+1) Push your deployment config to GitHub (these should be committed):
+- [`.firebaserc`](.firebaserc:1)
+- [`firebase.json`](firebase.json:1)
+- Frontend source under [`frontend/`](frontend/package.json:1)
+
+2) In Firebase Console:
+- Project `waveonplay` → **Hosting** → **GitHub** (or “Connect to GitHub”).
+
+3) Select:
+- Repository + branch: **main**
+- Hosting target / site: `waveonplay`
+
+4) Build settings:
+- Build command: `cd frontend && npm ci && npm run build`
+- Public directory: `frontend/dist`
+
+5) Environment variables:
+- Add `VITE_API_BASE_URL` and set it to your Cloud Run backend URL including `/api`.
+  Example: `https://waveon-backend-vo7jb6dnjq-ew.a.run.app/api`
+
+This will generate and commit a workflow under [`.github/workflows/`](.github/workflows/) automatically.
+
 ## 3) Windows npm “Access is denied” (esbuild/rollup/lightningcss)
 
 On Windows, native Node modules can get locked by antivirus/Defender or by a running Node process.

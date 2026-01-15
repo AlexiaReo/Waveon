@@ -9,3 +9,6 @@ backend/uploads/
 
 # Frontend environment (keep secrets out of git)
 frontend/.env.production
+
+# Local debug artifacts
+screenshots/

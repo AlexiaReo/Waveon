@@ -7,7 +7,11 @@
  */
 
 export const API_BASE_URL: string =
-  (import.meta as any).env?.VITE_API_BASE_URL ?? "http://localhost:8081/api";
+  (import.meta as any).env?.VITE_API_BASE_URL ??
+  // Safe defaults so a production build never points at the end-user's localhost.
+  ((import.meta as any).env?.PROD
+    ? "https://waveon-backend-206437146356.europe-west1.run.app/api"
+    : "http://localhost:8081/api");
 
 export function apiUrl(path: string): string {
   // Accept both "songs" and "/songs".
