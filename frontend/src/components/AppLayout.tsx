@@ -138,7 +138,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                 });
                 return false;
             }
-            const response = await fetch("http://localhost:8081/api/songs", {
+            const response = await fetch(apiUrl("/songs"), {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`
