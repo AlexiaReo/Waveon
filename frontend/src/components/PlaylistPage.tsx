@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useRef, useState} from "react";
 import {Button} from "primereact/button";
+import { apiUrl } from "../config/api";
 
 interface UserDTO {
     id: number;
@@ -46,8 +47,8 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({playlistId, onBack}) 
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
     const audioRef = useRef<HTMLAudioElement>(null);
 
-    const playlistUrl = useMemo(() => `http://localhost:8081/api/playlists/${playlistId}`, [playlistId]);
-    const playlistSongsUrl = useMemo(() => `http://localhost:8081/api/playlists/${playlistId}/songs`, [playlistId]);
+    const playlistUrl = useMemo(() => apiUrl(`/playlists/${playlistId}`), [playlistId]);
+    const playlistSongsUrl = useMemo(() => apiUrl(`/playlists/${playlistId}/songs`), [playlistId]);
 
     useEffect(() => {
         let cancelled = false;
@@ -86,7 +87,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({playlistId, onBack}) 
     // Load+play when selecting a song
     useEffect(() => {
         if (!audioRef.current || !currentSong) return;
-        audioRef.current.src = `http://localhost:8081/api/songs/${currentSong.id}/stream`;
+        audioRef.current.src = apiUrl(`/songs/${currentSong.id}/stream`);
         audioRef.current.play();
         setIsPlaying(true);
     }, [currentSong]);
