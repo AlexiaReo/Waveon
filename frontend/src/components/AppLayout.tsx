@@ -708,7 +708,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         if (!activePlaylistId) return;
 
         try {
-            const response = await fetch(apiUrl(`/playlists/${activePlaylistId}`), {
+            const response = await authFetch(apiUrl(`/playlists/${activePlaylistId}`), {
                 method: "DELETE"
             });
 
