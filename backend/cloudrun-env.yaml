@@ -5,6 +5,7 @@
 PUBLIC_BASE_URL: "https://waveon-backend-vo7jb6dnjq-ew.a.run.app"
 JWT_SECRET: "WaveonJWT#2026-Super-Secret-Key-ChangeMe"
 CORS_ALLOWED_ORIGINS: "https://waveonplay.web.app"
+GCS_BUCKET_NAME: "waveon-images"
 
 # Cloud SQL Postgres via socket factory (the `&` is safe in YAML)
 DATABASE_URL: "jdbc:postgresql:///waveondb?cloudSqlInstance=waveonplay:europe-west1:waveon-db&socketFactory=com.google.cloud.sql.postgres.SocketFactory"

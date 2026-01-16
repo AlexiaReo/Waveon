@@ -52,6 +52,9 @@ dependencies {
     // Used by JDBC URL param: socketFactory=com.google.cloud.sql.postgres.SocketFactory
     implementation 'com.google.cloud.sql:postgres-socket-factory:1.21.0'
 
+    // Google Cloud Storage
+    implementation 'com.google.cloud:google-cloud-storage:2.40.1'
+
     // Tests
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.h2database:h2'

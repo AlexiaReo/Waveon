@@ -11,6 +11,7 @@ services:
      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/waveondb
      SPRING_DATASOURCE_USERNAME: user
      SPRING_DATASOURCE_PASSWORD: password
+     GCS_BUCKET_NAME: waveon-images
     depends_on:
       - db
     volumes:

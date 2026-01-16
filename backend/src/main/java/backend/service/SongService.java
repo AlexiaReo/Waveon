@@ -9,10 +9,13 @@ import backend.repository.DBArtistRepository;
 import backend.repository.DBSongRepository;
 import backend.repository.DBUserRepository;
 import backend.model.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.Authentication;
+
+import java.util.Optional;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -40,6 +43,9 @@ public class SongService {
     private final SongMapper songMapper;
     private final DBArtistRepository artistRepository;
     private final DBUserRepository userRepository;
+
+    @Autowired(required = false)
+    private GoogleCloudStorageService googleCloudStorageService;
 
     public SongService(DBSongRepository songRepository, SongMapper songMapper, DBArtistRepository artistRepository, DBUserRepository userRepository) {
 
@@ -81,14 +87,17 @@ public class SongService {
                             .build()));
         }
 
-        // 3. Save the audio + image files
+        // 3. Save the audio file locally and upload image to GCS
         String audioFileName = saveAudioFile(file);
-        String imageFileName = saveImageFile(image);
-
-        // IMPORTANT: return an absolute URL the frontend can load from anywhere.
-        String base = (publicBaseUrl == null) ? "" : publicBaseUrl.trim();
-        if (base.endsWith("/")) base = base.substring(0, base.length() - 1);
-        String imageUrl = base + "/api/songs/image/" + imageFileName;
+        String imageUrl;
+        if (googleCloudStorageService == null) {
+            throw new RuntimeException("Google Cloud Storage service is not available. Please configure GCS_BUCKET_NAME.");
+        }
+        try {
+            imageUrl = googleCloudStorageService.uploadImage(image);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload image to cloud storage", e);
+        }
 
         // 3. Map Genre
         Genre genre;
@@ -137,24 +146,6 @@ public class SongService {
         }
     }
 
-    private String saveImageFile(MultipartFile file) {
-        try {
-            Path uploadDir = Paths.get("uploads/images").toAbsolutePath();
-
-            if (!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
-                System.out.println("Created directory: " + uploadDir);
-            }
-
-            String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-            Path targetPath = uploadDir.resolve(fileName);
-            Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
-            return fileName;
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException("Could not save image file: " + e.getMessage());
-        }
-    }
 
 
     public SongDTO getSongById(Long id) {
@@ -224,7 +215,9 @@ public class SongService {
 
         // Best-effort file cleanup (ignore failures)
         deleteAudioFileIfUploaded(song.getFilepath());
-        deleteImageFileIfUploaded(song.getImageUrl());
+        if (googleCloudStorageService != null) {
+            googleCloudStorageService.deleteImage(song.getImageUrl());
+        }
 
         songRepository.deleteById(id);
     }
