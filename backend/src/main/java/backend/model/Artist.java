@@ -44,7 +44,7 @@ public class Artist {
     private Long followers;
 
     @Setter
-    @Column(name = "image_url")
+    @Column(name = "imageurl")
     private String imageUrl;
 
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL)

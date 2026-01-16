@@ -75,7 +75,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             <section>
                 <div className="section-header flex justify-between items-center mb-6">
-                    <h2 className="text-2xl m-0 font-bold">Top Songs</h2>
+                    <h2 className="text-2xl m-0 font-bold">Liked Songs</h2>
                     <span onClick={() => onNavigate('favorites')} className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors cursor-pointer">See All</span>
                 </div>
                 <div className="card-grid">

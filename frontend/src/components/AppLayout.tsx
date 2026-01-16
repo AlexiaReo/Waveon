@@ -1,7 +1,7 @@
 // src/components/AppLayout.tsx
 
 import React, { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
-import type { Song, Playlist, Artist, PageContentProps, UserLibrary } from '../types';
+import type { Song, Playlist, Artist, UserLibrary } from '../types';
 import { MainSidebar } from './MainSidebar';
 import { TopToolbar } from './TopToolbar';
 import {ArtistUploadPage} from "../pages/ArtistUploadPage.tsx";
@@ -412,14 +412,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
     // --- CREATE / EDIT / DELETE PLAYLIST LOGIC ---
     const handleSavePlaylist = async (data: { title: string, description: string, selectedSongIds: number[] }) => {
         const isEditing = currentView === 'edit-playlist' && activePlaylistId;
-
+        const token = sessionStorage.getItem("authToken");
         const selectedSongs = data.selectedSongIds.map(id => ({ id }));
 
         const playlistData = {
             title: data.title,
             description: data.description || (isEditing ? "" : "Created via App"),
             visibility: "PUBLIC",
-            imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop",
+            imageurl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop",
             user_id: { id: userId },
             songs: selectedSongs
         };
@@ -433,7 +433,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
         try {
             const response = await fetch(url, {
                 method: method,
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`},
                 body: JSON.stringify(playlistData)
             });
 
@@ -734,7 +734,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                                             setIsPlaying(true);
                                         },
                                         onNavigate: handleNavigate, // <--- CRITICAL UPDATE
-                                        onToggleLike: toggleLike
+                                        onToggleLike: toggleLike,
                                         onArtistClick: handleArtistClick
                                     })}
                                 </div>
