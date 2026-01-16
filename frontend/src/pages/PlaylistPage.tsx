@@ -5,6 +5,7 @@ import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 
 interface PlaylistPageProps {
     playlist: Playlist | undefined;
@@ -24,9 +25,16 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({
     if (!playlist) return <div className="p-8 text-white">Playlist not found</div>;
 
     const handleDeleteClick = () => {
-        if (window.confirm(`Are you sure you want to delete "${playlist.title}"?`)) {
-            onDelete();
-        }
+        confirmDialog({
+            message: `Are you sure you want to delete "${playlist?.title}"?`,
+            header: 'Delete Playlist',
+            icon: 'pi pi-exclamation-triangle',
+            acceptClassName: 'p-button-danger', // Makes the confirm button red
+            acceptLabel: 'Delete',
+            rejectLabel: 'Cancel',
+            accept: () => onDelete(), // Calls your delete logic if they click yes
+            reject: () => console.log('Delete cancelled')
+        });
     };
 
     return (
@@ -78,6 +86,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({
                 >
                     <DeleteOutlineIcon fontSize="large" />
                 </button>
+                <ConfirmDialog />
             </div>
 
             {/* --- Songs List --- */}

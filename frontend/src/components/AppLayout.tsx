@@ -16,6 +16,7 @@ import {Toast} from "primereact/toast";
 import {StudyModeOverlay} from "./StudyModeOverlay.tsx"; [StudyModeOverlay];
 import { ExplorePage } from '../pages/ExplorePage';
 import { FavoritesPage } from '../pages/FavoritesPage';
+import { DiscoveryMap} from "../pages/DiscoveryMap.tsx";
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -31,7 +32,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
 
 
     // View Management
-    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' |  'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio' | 'artist'>('home');
+    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' |  'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio' | 'artist' | 'galaxy'>('home');
     // Data States
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [allSongs, setAllSongs] = useState<Song[]>([]);
@@ -376,7 +377,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
     };
 
     // --- Navigation Handlers ---
-    const handleNavigate = (view: 'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist') => {
+    const handleNavigate = (view: any) => {
         setCurrentView(view);
         setActivePlaylistId(null);
         if (view === 'home') {
@@ -394,6 +395,65 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
             setCurrentFilteredSongs(selectedPlaylist.songs);
         } else {
             setCurrentFilteredSongs([]);
+        }
+    };
+
+    const handleGenreDiscovery = async (genreName: string, genreSongs: Song[]) => {
+        const token = sessionStorage.getItem("authToken");
+        const targetTitle = `Your ${genreName} Playlist`;
+        const existingPlaylist = playlists.find(p => p.title === targetTitle);
+
+        if (existingPlaylist) {
+            // If it exists, don't create a new one. Just navigate to it and play!
+            handlePlaylistClick(existingPlaylist.id);
+
+            toast.current?.show({
+                severity: 'info',
+                summary: 'Playlist Found',
+                detail: `Opening your existing ${genreName} collection.`,
+                life: 3000
+            });
+            return; // Stop execution here
+        }
+
+        // Create the auto-generated playlist object
+        const playlistData = {
+            title: `Your ${genreName} Playlist`,
+            description: `Discovered in the Galaxy of Music`,
+            visibility: "PUBLIC",
+            imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17", // Default galaxy cover
+            user_id: { id: userId },
+            songs: genreSongs.map(s => ({ id: s.id }))
+        };
+
+        try {
+            const response = await fetch("http://localhost:8081/api/playlists", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(playlistData)
+            });
+
+            if (response.ok) {
+                // Update library and sidebar immediately
+                fetchPlaylists();
+
+                // Set the player to the newly discovered genre set
+                setCurrentFilteredSongs(genreSongs);
+                setCurrentSong(genreSongs[0]);
+                setIsPlaying(true);
+
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Galaxy Playlist Created',
+                    detail: `Added "Your ${genreName} Playlist" to your library!`,
+                    life: 3000
+                });
+            }
+        } catch (error) {
+            console.error("Discovery error:", error);
         }
     };
 
@@ -772,6 +832,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children , userId}) => {
                         onEnded={handleSongEnded}
                     />
                 </>
+            )}
+            {currentView === 'galaxy' && (
+                <DiscoveryMap
+                    songs={allSongs}
+                    onGenreDiscovery={handleGenreDiscovery}
+                    onBack={() => handleNavigate('home')}
+                />
             )}
         </div>
     );
