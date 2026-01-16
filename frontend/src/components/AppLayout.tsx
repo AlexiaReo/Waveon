@@ -633,7 +633,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         }
 
         try {
-            const res = await authFetch(`http://localhost:8081/api/playlists/${playlistId}`);
+            // authFetch expects a relative API path; passing an absolute URL breaks apiUrl() and can double-prefix `/api`.
+            const res = await authFetch(`/playlists/${playlistId}`);
             if (!res.ok) throw new Error(`Failed to fetch playlist ${playlistId}`);
             const full: Playlist = await res.json();
 
@@ -773,7 +774,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
 
         // 2. Call Backend
         try {
-            await authFetch(`http://localhost:8081/api/songs/${songId}/like?userId=${userId}`, {
+            // authFetch expects a relative API path; passing an absolute URL breaks apiUrl() and can double-prefix `/api`.
+            await authFetch(`/songs/${songId}/like?userId=${userId}`, {
                 method: "POST"
             });
         } catch (error) {

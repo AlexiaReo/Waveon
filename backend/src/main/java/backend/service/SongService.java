@@ -61,6 +61,7 @@ public class SongService {
                 .orElseGet(() -> artistRepository.save(Artist.builder()
                         .name(artistName)
                         .followers(0L)
+                        .imageUrl("https://via.placeholder.com/150") // Default image for auto-created artists
                         .build()));
 
         // 3. Save the audio + image files

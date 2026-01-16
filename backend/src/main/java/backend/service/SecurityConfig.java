@@ -3,6 +3,7 @@ package backend.service;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -48,10 +49,15 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // ✅ Allow CORS preflight requests (OPTIONS) without authentication
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Support both with/without server.servlet.context-path (/api)
                         .requestMatchers("/auth/**", "/api/auth/**").permitAll()
-                        // ✅ Permit song/playlist access so the app can load data
-                        .requestMatchers("/songs/**", "/playlists/**", "/artists/**", "/api/songs/**", "/api/songs/*/stream").permitAll()
+                        // ✅ Only GET requests for songs/playlists/artists are public
+                        // POST/PUT/DELETE require authentication so @PreAuthorize works correctly
+                        .requestMatchers(HttpMethod.GET, "/songs/**", "/api/songs/**", "/api/songs/*/stream").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/playlists/**", "/api/playlists/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/artists/**", "/api/artists/**").permitAll()
                         // ✅ Profile page can be viewed publicly; backend decides if viewer is owner
                         .requestMatchers("/users/*/profile", "/api/users/*/profile").permitAll()
                         .anyRequest().authenticated()
