@@ -1,0 +1,1 @@
+UPDATE artists SET imageUrl = 'https://hips.hearstapps.com/hmg-prod/images/abel-tesfaye-knowen-as-the-weeknd-arrives-for-the-us-news-photo-1748446206.pjpeg?crop=0.679xw:0.979xh;0.169xw,0.0210xh&resize=640:*' WHERE id = 10; -- The Weeknd
