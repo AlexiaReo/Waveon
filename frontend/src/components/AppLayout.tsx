@@ -620,42 +620,42 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     };
 
     // Used by ProfilePage (play from profile without an extra click)
-    const handlePlayPlaylist = useCallback(async (playlistId: number) => {
-        setActivePlaylistId(playlistId);
-        setCurrentView('playlist');
-
-        const existing = playlists.find(p => p.id === playlistId);
-        if (existing?.songs?.length) {
-            setCurrentFilteredSongs(existing.songs);
-            setCurrentSong(existing.songs[0]);
-            setIsPlaying(true);
-            return;
-        }
-
-        try {
-            // authFetch expects a relative API path; passing an absolute URL breaks apiUrl() and can double-prefix `/api`.
-            const res = await authFetch(`/playlists/${playlistId}`);
-            if (!res.ok) throw new Error(`Failed to fetch playlist ${playlistId}`);
-            const full: Playlist = await res.json();
-
-            setPlaylists(prev => {
-                const idx = prev.findIndex(p => p.id === playlistId);
-                if (idx === -1) return [...prev, full];
-                const next = [...prev];
-                next[idx] = full;
-                return next;
-            });
-
-            const songs = full.songs ?? [];
-            setCurrentFilteredSongs(songs);
-            if (songs.length) {
-                setCurrentSong(songs[0]);
-                setIsPlaying(true);
-            }
-        } catch (e) {
-            console.error("Failed to play playlist:", e);
-        }
-    }, [playlists]);
+    // const handlePlayPlaylist = useCallback(async (playlistId: number) => {
+    //     setActivePlaylistId(playlistId);
+    //     setCurrentView('playlist');
+    //
+    //     const existing = playlists.find(p => p.id === playlistId);
+    //     if (existing?.songs?.length) {
+    //         setCurrentFilteredSongs(existing.songs);
+    //         setCurrentSong(existing.songs[0]);
+    //         setIsPlaying(true);
+    //         return;
+    //     }
+    //
+    //     try {
+    //         // authFetch expects a relative API path; passing an absolute URL breaks apiUrl() and can double-prefix `/api`.
+    //         const res = await authFetch(`/playlists/${playlistId}`);
+    //         if (!res.ok) throw new Error(`Failed to fetch playlist ${playlistId}`);
+    //         const full: Playlist = await res.json();
+    //
+    //         setPlaylists(prev => {
+    //             const idx = prev.findIndex(p => p.id === playlistId);
+    //             if (idx === -1) return [...prev, full];
+    //             const next = [...prev];
+    //             next[idx] = full;
+    //             return next;
+    //         });
+    //
+    //         const songs = full.songs ?? [];
+    //         setCurrentFilteredSongs(songs);
+    //         if (songs.length) {
+    //             setCurrentSong(songs[0]);
+    //             setIsPlaying(true);
+    //         }
+    //     } catch (e) {
+    //         console.error("Failed to play playlist:", e);
+    //     }
+    // }, [playlists]);
 
     const handleOpenCreatePlaylist = () => {
         setCurrentView('create-playlist');
