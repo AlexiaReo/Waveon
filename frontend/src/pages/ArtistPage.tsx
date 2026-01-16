@@ -11,6 +11,8 @@ interface ArtistPageProps {
     appearingInPlaylists: Playlist[];
     onSongSelect: (song: Song) => void;
     onAlbumClick: (albumId: number) => void;
+    isFollowing: boolean;
+    onToggleFollow: () => void;
 }
 
 export const ArtistPage: React.FC<ArtistPageProps> = ({
@@ -19,7 +21,8 @@ export const ArtistPage: React.FC<ArtistPageProps> = ({
                                                           albums,
                                                           appearingInPlaylists,
                                                           onSongSelect,
-                                                          onAlbumClick
+                                                          onAlbumClick,
+    isFollowing,onToggleFollow
                                                       }) => {
     return (
         <div className="artist-page text-white bg-gradient-to-b from-[#404040] to-[#121212] min-h-full flex flex-col font-sans rounded-xl overflow-hidden pb-12 items-start">
@@ -36,9 +39,19 @@ export const ArtistPage: React.FC<ArtistPageProps> = ({
 
                 <div className="flex flex-col gap-2 mb-2 text-left items-start">
                     <div className="flex items-center gap-2 text-blue-400">
-                        <VerifiedIcon fontSize="small" />
+                        <VerifiedIcon fontSize="small"/>
                         <span className="text-xs font-bold uppercase tracking-widest text-white">Verified Artist</span>
                     </div>
+                    <button
+                        onClick={onToggleFollow}
+                        className={`px-6 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest transition-all border ${
+                            isFollowing
+                                ? "bg-transparent border-white text-white hover:bg-white/10"
+                                : "bg-[#f15809] border-[#f15809] text-black hover:scale-105"
+                        }`}
+                    >
+                        {isFollowing ? "Following" : "Follow"}
+                    </button>
                     <h1 className="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white drop-shadow-lg">
                         {artist.name}
                     </h1>

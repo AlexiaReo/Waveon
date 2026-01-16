@@ -68,10 +68,17 @@ export const LibraryPage: React.FC<LibraryPageProps> = ({ library, onPlaylistCli
                                 className="bg-[#181818] p-4 rounded-md hover:bg-[#282828] cursor-pointer transition-all duration-300 group"
                             >
                                 <div className="w-full aspect-square mb-4 shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
-                                    {/* Use a Material Icon or placeholder if no image URL is available for artist */}
-                                    <div className="w-full h-full bg-[#333] rounded-full flex items-center justify-center text-gray-400">
-                                        <PersonIcon style={{ fontSize: 64 }} />
-                                    </div>
+                                    {artist.imageUrl ? (
+                                        <img
+                                            src={artist.imageUrl}
+                                            className="w-full h-full object-cover rounded-full"
+                                            alt={artist.name}
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full bg-[#333] rounded-full flex items-center justify-center text-gray-400">
+                                            <PersonIcon style={{ fontSize: 64 }} />
+                                        </div>
+                                    )}
                                 </div>
                                 <h3 className="font-bold text-base truncate mb-1">{artist.name}</h3>
                                 <p className="text-sm text-[#b3b3b3]">Artist</p>
