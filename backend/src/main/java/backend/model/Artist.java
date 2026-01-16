@@ -43,6 +43,10 @@ public class Artist {
     @Setter
     private Long followers;
 
+    @Setter
+    @Column(name = "imageurl")
+    private String imageUrl;
+
     @OneToMany(mappedBy = "artist", cascade = CascadeType.ALL)
     @Builder.Default
     private List<Song> songs = new ArrayList<>();

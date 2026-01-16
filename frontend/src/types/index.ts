@@ -4,12 +4,14 @@ export interface Artist {
     id: number;
     name: string;
     followers: number;
+    imageUrl: string;
 }
 
 export interface Song {
     id: number;
     name: string;
     artist: Artist;
+    genre: string;
     filepath: string;
     imageUrl: string;
     isLiked?: boolean;
@@ -33,4 +35,5 @@ export type PageContentProps = {
     songs: Song[];
     filteredSongs: Song[];
     handleSongSelect: (song: Song) => void;
+    onArtistClick?: (id: number) => void;
 };

@@ -1,9 +1,7 @@
 // src/components/AppLayout.tsx
 
-import * as React from "react";
-import { useState, useEffect, useRef, useCallback } from "react";
-import type { ChangeEvent } from "react";
-import type { Song, Playlist, PageContentProps, UserLibrary } from '../types';
+import React, { useState, useEffect, useRef, useCallback, type ChangeEvent } from "react";
+import type { Song, Playlist, Artist, PageContentProps, UserLibrary } from '../types';
 import { MainSidebar } from './MainSidebar';
 import { TopToolbar } from './TopToolbar';
 import {ArtistUploadPage} from "../pages/ArtistUploadPage.tsx";
@@ -12,18 +10,15 @@ import { LibraryPage } from '../pages/LibraryPage';
 import { PlaylistPage } from '../pages/PlaylistPage';
 import { PlaylistFormPage } from '../pages/PlaylistFormPage';
 import { ProfilePage } from './ProfilePage';
+import { ArtistPage } from '../pages/ArtistPage';
 import './HomaPage.css';
 import { authFetch} from "../types/authFetch.ts";
 import {Toast} from "primereact/toast";
 import {StudyModeOverlay} from "./StudyModeOverlay.tsx"; [StudyModeOverlay];
-<<<<<<< HEAD
 import { apiUrl } from "../config/api";
 import { ExplorePage } from '../pages/ExplorePage';
 import { FavoritesPage } from '../pages/FavoritesPage';
-=======
-import { ExplorePage } from '../pages/ExplorePage';
-import { FavoritesPage } from '../pages/FavoritesPage';
->>>>>>> origin/main
+import { DiscoveryMap} from "../pages/DiscoveryMap.tsx";
 
 interface AppLayoutProps {
     children: React.ReactNode;
@@ -48,11 +43,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     };
 
     // View Management
-<<<<<<< HEAD
-    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio' | 'profile'>('home');
-=======
-    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio'>('home');
->>>>>>> origin/main
+    const [currentView, setCurrentView] = useState<'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'artist-studio' | 'profile' | 'artist' | 'galaxy'>('home');
     // Data States
     const [playlists, setPlaylists] = useState<Playlist[]>([]);
     const [allSongs, setAllSongs] = useState<Song[]>([]);
@@ -60,6 +51,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     const [userRole, setUserRole] = useState<string | null>(null);
 
     // Player States
+    const [selectedArtistId, setSelectedArtistId] = useState<number | null>(null);
     const [currentSong, setCurrentSong] = useState<Song | null>(null);
     const [currentFilteredSongs, setCurrentFilteredSongs] = useState<Song[]>([]);
     const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -278,23 +270,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         // 1. Fetch Playlists (Will return empty/403 until logged in, which is fine)
         fetchPlaylists();
 
-<<<<<<< HEAD
-        // 2. Fetch Songs GLOBALLY (Using standard fetch)
-        fetch(apiUrl("/songs"))
-            .then(res => {
-                if (!res.ok) throw new Error("Failed to fetch global songs");
-                return res.json();
-            })
-            .then(data => {
-                const validSongs = normalizeSongs(data);
-=======
         //for fetch liked songs also
         const fetchSongsAndLikes = async () => {
             try {
                 // A. Fetch All Songs
                 const songsResponse = await fetch("http://localhost:8081/api/songs");
                 const allSongsData = await songsResponse.json();
->>>>>>> origin/main
 
                 // B. Fetch Liked Songs (Only if user is logged in)
                 let likedSongIds = new Set<number>();
@@ -411,27 +392,50 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
     const toggleShuffle = () => setIsShuffling(prev => !prev);
     const toggleRepeat = () => setRepeatMode(prev => (prev === 'off' ? 'all' : prev === 'all' ? 'one' : 'off'));
 
+
+    const [filteredArtists, setFilteredArtists] = useState<Artist[]>([]);
+
     const handleSearchChange = (e: ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
-         setSearch(value);
+        setSearch(value);
+
+        if (currentView === 'artist' && value.trim() !== "") {
+            setCurrentView('home');
+            setSelectedArtistId(null);
+            // Reset scroll to top of the main content area
+            if (mainContentRef.current) mainContentRef.current.scrollTop = 0;
+        }
+
         if (value.trim() === "") {
             setCurrentFilteredSongs(allSongs);
-        } else {
-            // Otherwise, filter the list immediately
-            const filtered = allSongs.filter(song =>
-                song.name.toLowerCase().includes(value.toLowerCase()) ||
-                (song.artist?.name ?? "").toLowerCase().includes(value.toLowerCase())
-            );
-            setCurrentFilteredSongs(filtered);
+            setFilteredArtists([]);
+            return;
         }
+
+        // 1. Create the matchedSongs variable FIRST so it can be referenced below
+        const matchedSongs = allSongs.filter(song =>
+            song.name.toLowerCase().includes(value.toLowerCase()) ||
+            (song.artist?.name ?? "").toLowerCase().includes(value.toLowerCase())
+        );
+
+        // 2. Update the song grid
+        setCurrentFilteredSongs(matchedSongs);
+
+        // 3. Extract Unique Artists safely
+        const uniqueArtistsMap = new Map<number, Artist>();
+
+        matchedSongs.forEach(s => {
+            // Only add if the song has an artist and we haven't added this ID yet
+            if (s.artist && s.artist.id && !uniqueArtistsMap.has(s.artist.id)) {
+                uniqueArtistsMap.set(s.artist.id, s.artist);
+            }
+        });
+        // 4. Update the artist state
+        setFilteredArtists(Array.from(uniqueArtistsMap.values()));
     };
 
     // --- Navigation Handlers ---
-<<<<<<< HEAD
-    const handleNavigate = (view: 'home' | 'library' | 'explore' | 'playlist' | 'create-playlist' | 'edit-playlist' | 'profile') => {
-=======
-    const handleNavigate = (view: 'home' | 'library' | 'explore' | 'favorites' | 'playlist' | 'create-playlist' | 'edit-playlist') => {
->>>>>>> origin/main
+    const handleNavigate = (view: any) => {
         setCurrentView(view);
         setActivePlaylistId(null);
         if (view === 'home') {
@@ -536,22 +540,88 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         }
     };
 
+    const handleGenreDiscovery = async (genreName: string, genreSongs: Song[]) => {
+        const token = sessionStorage.getItem("authToken");
+        const targetTitle = `Your ${genreName} Playlist`;
+        const existingPlaylist = playlists.find(p => p.title === targetTitle);
+
+        if (existingPlaylist) {
+            // If it exists, don't create a new one. Just navigate to it and play!
+            handlePlaylistClick(existingPlaylist.id);
+
+            toast.current?.show({
+                severity: 'info',
+                summary: 'Playlist Found',
+                detail: `Opening your existing ${genreName} collection.`,
+                life: 3000
+            });
+            return; // Stop execution here
+        }
+
+        // Create the auto-generated playlist object
+        const playlistData = {
+            title: `Your ${genreName} Playlist`,
+            description: `Discovered in the Galaxy of Music`,
+            visibility: "PUBLIC",
+            imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17", // Default galaxy cover
+            user_id: { id: userId },
+            songs: genreSongs.map(s => ({ id: s.id }))
+        };
+
+        try {
+            const response = await fetch("http://localhost:8081/api/playlists", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify(playlistData)
+            });
+
+            if (response.ok) {
+                // Update library and sidebar immediately
+                fetchPlaylists();
+
+                // Set the player to the newly discovered genre set
+                setCurrentFilteredSongs(genreSongs);
+                setCurrentSong(genreSongs[0]);
+                setIsPlaying(true);
+
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Galaxy Playlist Created',
+                    detail: `Added "Your ${genreName} Playlist" to your library!`,
+                    life: 3000
+                });
+            }
+        } catch (error) {
+            console.error("Discovery error:", error);
+        }
+    };
+
+    const handleArtistClick = (artistId: number) => {
+        setSelectedArtistId(artistId);
+        setCurrentView('artist');
+        if (mainContentRef.current) mainContentRef.current.scrollTop = 0;
+    };
+
     const handleOpenCreatePlaylist = () => {
         setCurrentView('create-playlist');
         setActivePlaylistId(null);
     };
 
+
     // --- CREATE / EDIT / DELETE PLAYLIST LOGIC ---
     const handleSavePlaylist = async (data: { title: string, description: string, selectedSongIds: number[] }) => {
         const isEditing = currentView === 'edit-playlist' && activePlaylistId;
-
+        const token = sessionStorage.getItem("authToken");
         const selectedSongs = data.selectedSongIds.map(id => ({ id }));
 
         const playlistData = {
             title: data.title,
             description: data.description || (isEditing ? "" : "Created via App"),
             visibility: "PUBLIC",
-            imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop",
+            imageurl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop",
             user_id: { id: userId },
             songs: selectedSongs
         };
@@ -565,7 +635,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         try {
             const response = await fetch(url, {
                 method: method,
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}`},
                 body: JSON.stringify(playlistData)
             });
 
@@ -748,6 +818,37 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                     />
                 ) : currentView === 'artist-studio' ? (
                     <ArtistUploadPage onUpload={handleArtistUpload} />
+                ) : currentView === 'artist' && selectedArtistId ? (
+                    (() => {
+                        const artistSongs = allSongs.filter(s => s.artist?.id === selectedArtistId);
+                        const artistInfo = artistSongs[0]?.artist;
+
+                        // Finding albums (Playlists with "album" in description)
+                        // Added ?. to description and artist
+                        const artistAlbums = playlists.filter(p =>
+                            p.description?.toLowerCase().includes("album") &&
+                            p.songs?.some(s => s.artist?.id === selectedArtistId)
+                        );
+
+                        // Finding playlists where this artist's music appears
+                        // Added check for userId to ensure it only shows YOUR playlists
+                        const userPlaylists = playlists.filter(p =>
+                            (p.user_id?.id === userId || p.user_id === userId) &&
+                            !p.description?.toLowerCase().includes("album") &&
+                            p.songs?.some(s => s.artist?.id === selectedArtistId)
+                        );
+
+                        return artistInfo ? (
+                            <ArtistPage
+                                artist={artistInfo}
+                                songs={artistSongs}
+                                albums={artistAlbums}
+                                appearingInPlaylists={userPlaylists}
+                                onSongSelect={(song) => { setCurrentSong(song); setIsPlaying(true); }}
+                                onAlbumClick={handlePlaylistClick}
+                            />
+                        ) : <div className="p-8">Artist profile not found.</div>;
+                    })()
                 ) :currentView === 'library' ? (
                     <LibraryPage
                         library={userLibrary}
@@ -781,6 +882,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                         }}
                         onEdit={() => setCurrentView('edit-playlist')}
                         onDelete={handleDeletePlaylist} // ADDED: Pass delete handler
+                        onArtistClick={handleArtistClick}
                     />
                 ) : (currentView === 'create-playlist' || currentView === 'edit-playlist') ? (
                     <PlaylistFormPage
@@ -795,23 +897,64 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                                 ? playlists.find(p => p.id === activePlaylistId)
                                 : undefined
                         }
+
                     />
                 ) : (
                     React.Children.map(children, child => {
-                        if (React.isValidElement(child)) {
-                            const injectedProps: PageContentProps = {
-                                songs: allSongs,
-                                filteredSongs: currentFilteredSongs,
-                                handleSongSelect: (song: Song) => {
-                                    setCurrentSong(song);
-                                    setIsPlaying(true);
-                                    mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
-                                },
-                                onNavigate: handleNavigate, // <--- CRITICAL UPDATE
-                                onToggleLike: toggleLike
-                            };
-                            return React.cloneElement(child, injectedProps as any);}
-                        return child;
+                        if (!React.isValidElement(child)) return child;
+
+                        const isSearching = search.trim() !== "";
+
+                        return (
+                            <div className="flex flex-col gap-10">
+                                {/* 1. RECOMMENDED ARTISTS (Only on search) */}
+                                {isSearching && filteredArtists.length > 0 && (
+                                    <section className="px-6 pt-4">
+                                        <h2 className="text-2xl font-bold mb-6 text-white tracking-tight">Recommended
+                                            Artists</h2>
+                                        <div className="flex flex-wrap gap-6 justify-start">
+                                            {filteredArtists.slice(0, 5).map(artist => ( // Scope variable 'artist'
+                                                <div
+                                                    key={`search-artist-${artist.id}`}
+                                                    className="bg-[#181818] hover:bg-[#282828] p-5 rounded-xl transition-all duration-300 cursor-pointer group w-[200px] flex flex-col items-center shadow-lg"
+                                                    onClick={() => handleArtistClick(artist.id)}
+                                                >
+                                                    <div
+                                                        className="w-32 h-32 mb-4 relative shadow-[0_8px_24px_rgba(0,0,0,0.5)] rounded-full overflow-hidden">
+                                                        <img
+                                                            src={artist.imageUrl || 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?q=80&w=1000&auto=format&fit=crop'}
+                                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                                            alt={artist.name}
+                                                        />
+                                                    </div>
+                                                    <span
+                                                        className="font-bold text-base truncate w-full text-center text-white">{artist.name}</span>
+                                                    <span
+                                                        className="text-xs text-gray-400 mt-2 uppercase tracking-widest font-bold">Artist</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <div className="h-[1px] bg-white/10 w-full mt-10 mb-2"></div>
+                                    </section>
+                                )}
+
+                                {/* 2. THE MAIN CONTENT (Songs) */}
+                                <div className="px-2">
+                                    {React.cloneElement(child as React.ReactElement<any>, {
+                                        songs: allSongs,
+                                        filteredSongs: currentFilteredSongs,
+                                        isSearching: isSearching, // <--- PASS THIS to child to hide its internal title
+                                        handleSongSelect: (song: Song) => {
+                                            setCurrentSong(song);
+                                            setIsPlaying(true);
+                                        },
+                                        onNavigate: handleNavigate, // <--- CRITICAL UPDATE
+                                        onToggleLike: toggleLike,
+                                        onArtistClick: handleArtistClick
+                                    })}
+                                </div>
+                            </div>
+                        );
                     })
                 ))}
             </div>
@@ -844,6 +987,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                         onEnded={handleSongEnded}
                     />
                 </>
+            )}
+            {currentView === 'galaxy' && (
+                <DiscoveryMap
+                    songs={allSongs}
+                    onGenreDiscovery={handleGenreDiscovery}
+                    onBack={() => handleNavigate('home')}
+                />
             )}
         </div>
     );

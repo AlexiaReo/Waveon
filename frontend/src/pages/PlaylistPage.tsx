@@ -3,23 +3,38 @@ import React from 'react';
 import type { Playlist, Song } from '../types';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import EditIcon from '@mui/icons-material/Edit';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'; // ADDED Import
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 
 interface PlaylistPageProps {
     playlist: Playlist | undefined;
     onSongSelect: (song: Song) => void;
     onEdit: () => void;
-    onDelete: () => void; // ADDED Prop
+    onDelete: () => void;
+    onArtistClick: (artistId: number) => void;
 }
 
-export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSelect, onEdit, onDelete }) => {
+export const PlaylistPage: React.FC<PlaylistPageProps> = ({
+                                                              playlist,
+                                                              onSongSelect,
+                                                              onEdit,
+                                                              onDelete,
+                                                              onArtistClick
+                                                          }) => {
     if (!playlist) return <div className="p-8 text-white">Playlist not found</div>;
 
     const handleDeleteClick = () => {
-        if (window.confirm(`Are you sure you want to delete "${playlist.title}"?`)) {
-            onDelete();
-        }
+        confirmDialog({
+            message: `Are you sure you want to delete "${playlist?.title}"?`,
+            header: 'Delete Playlist',
+            icon: 'pi pi-exclamation-triangle',
+            acceptClassName: 'p-button-danger', // Makes the confirm button red
+            acceptLabel: 'Delete',
+            rejectLabel: 'Cancel',
+            accept: () => onDelete(), // Calls your delete logic if they click yes
+            reject: () => console.log('Delete cancelled')
+        });
     };
 
     return (
@@ -27,10 +42,10 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
             {/* --- Playlist Info Header --- */}
             <div className="flex flex-col md:flex-row gap-6 items-end p-6 bg-gradient-to-b from-transparent to-black/20">
                 <img
-                    src={playlist.imageUrl}
+                    src={playlist.imageUrl || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop'}
                     alt={playlist.title}
                     style={{ width: '192px', height: '192px', objectFit: 'cover' }}
-                    className="shadow-[0_8px_24px_rgba(0,0,0,0.5)] rounded-md flex-shrink-0"
+                    className="shadow-[0_8px_24px_rgba(0,0,0,0.5)] rounded-md flex-shrink-0 bg-[#333]"
                 />
 
                 <div className="flex flex-col gap-2 w-full mb-1">
@@ -41,7 +56,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
                     <div className="flex items-center gap-1 text-xs md:text-sm font-bold mt-2">
                         <span>User</span>
                         <span className="text-white mx-1">•</span>
-                        <span className="text-gray-300 font-medium">{playlist.songs.length} songs</span>
+                        <span className="text-gray-300 font-medium">{playlist.songs?.length || 0} songs</span>
                     </div>
                 </div>
             </div>
@@ -50,7 +65,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
             <div className="px-6 py-4 bg-gradient-to-b from-black/10 to-[#121212] flex items-center gap-4">
                 <button
                     className="bg-[#ff5e00] hover:bg-[#ff904f] text-black rounded-full p-3 shadow-lg transform transition hover:scale-105 flex items-center justify-center"
-                    onClick={() => playlist.songs.length > 0 && onSongSelect(playlist.songs[0])}
+                    onClick={() => playlist.songs?.length > 0 && onSongSelect(playlist.songs[0])}
                     title="Play"
                 >
                     <PlayArrowIcon style={{ fontSize: 28 }} className="ml-0.5"/>
@@ -64,7 +79,6 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
                     <EditIcon fontSize="large" />
                 </button>
 
-                {/* ADDED: Delete Button */}
                 <button
                     className="text-[#b3b3b3] hover:text-red-500 transition-colors p-2"
                     onClick={handleDeleteClick}
@@ -72,6 +86,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
                 >
                     <DeleteOutlineIcon fontSize="large" />
                 </button>
+                <ConfirmDialog />
             </div>
 
             {/* --- Songs List --- */}
@@ -86,7 +101,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
 
                 {/* Song Rows */}
                 <div className="flex flex-col">
-                    {playlist.songs.map((song, index) => (
+                    {playlist.songs?.map((song, index) => (
                         <div
                             key={`playlist-song-${song.id}`}
                             className="group !grid grid-cols-[auto_1fr] md:!grid-cols-[auto_4fr_3fr_minmax(60px,auto)] gap-4 items-center px-4 py-2 rounded-md hover:bg-[#ffffff1a] cursor-pointer transition-colors"
@@ -110,7 +125,14 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
                                 />
                                 <div className="flex flex-col truncate min-w-0">
                                     <span className="text-white text-sm font-normal truncate">{song.name}</span>
-                                    <span className="md:hidden text-xs text-[#b3b3b3] hover:text-white truncate transition-colors">
+                                    {/* Mobile Artist Link */}
+                                    <span
+                                        className="md:hidden text-xs text-[#b3b3b3] hover:text-white hover:underline truncate transition-colors"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // Prevent song selection
+                                            onArtistClick(song.artist.id);
+                                        }}
+                                    >
                                         {song.artist.name}
                                     </span>
                                 </div>
@@ -118,12 +140,18 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({ playlist, onSongSele
 
                             {/* 3. Artist Column (Desktop) */}
                             <div className="hidden md:flex items-center min-w-0">
-                                <span className="text-[#b3b3b3] text-sm hover:text-white hover:underline truncate cursor-pointer transition-colors">
+                                <span
+                                    className="text-[#b3b3b3] text-sm hover:text-white hover:underline truncate cursor-pointer transition-colors"
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Important: Stop the row's onSongSelect from firing
+                                        onArtistClick(song.artist.id);
+                                    }}
+                                >
                                     {song.artist.name}
                                 </span>
                             </div>
 
-                            {/* 4. Duration Column (Static placeholder) */}
+                            {/* 4. Duration Column */}
                             <div className="hidden md:flex justify-end text-[#b3b3b3] text-sm font-variant-numeric">
                                 3:45
                             </div>

@@ -6,6 +6,7 @@ interface HomePageProps {
     songs?: Song[];
     filteredSongs?: Song[];
     handleSongSelect?: (song: Song) => void;
+    onArtistClick?: (id: number) => void;
     onNavigate?: (view: any) => void;
     onToggleLike: (id: number) => void; // Define prop
     isSearching?: boolean;
@@ -15,6 +16,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                                                       songs=[],
                                                       filteredSongs=[],
                                                       handleSongSelect = () => {},
+                                                      onArtistClick,
                                                       onNavigate = () => {},
                                                       isSearching = false,
                                                       onToggleLike // Destructure prop
@@ -63,6 +65,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                             key={`song-${song.id}`}
                             song={song}
                             onSongSelect={handleSongSelect}
+                            onArtistClick={onArtistClick}
                             gradientStyle={cardGradients[index % cardGradients.length]}
                             onToggleLike={onToggleLike} // <--- PASSED HERE
                         />
@@ -72,7 +75,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
             <section>
                 <div className="section-header flex justify-between items-center mb-6">
-                    <h2 className="text-2xl m-0 font-bold">Top Songs</h2>
+                    <h2 className="text-2xl m-0 font-bold">Liked Songs</h2>
                     <span onClick={() => onNavigate('favorites')} className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors cursor-pointer">See All</span>
                 </div>
                 <div className="card-grid">
@@ -84,6 +87,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                                 key={`top-song-${song.id}`}
                                 song={song}
                                 onSongSelect={handleSongSelect}
+                                onArtistClick={onArtistClick}
                                 gradientStyle={cardGradients[index % cardGradients.length]}
                                 onToggleLike={onToggleLike}
                             />
