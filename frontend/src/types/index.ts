@@ -22,6 +22,7 @@ export interface Playlist {
     title: string;
     imageUrl: string;
     description: string;
+    visibility: string;
     user_id?: { id: number };// ADDED: Fixes the "Property description does not exist" error
     songs: Song[];       // ADDED: Required to list songs in the playlist page
 }

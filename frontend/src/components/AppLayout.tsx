@@ -673,8 +673,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
             title: data.title,
             description: data.description || (isEditing ? "" : "Created via App"),
             visibility: "PUBLIC",
-            imageurl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop",
-            user_id: { id: userId },
+            imageUrl: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop",
+            user_id: { id: userId }, // Change 'user_id: {id: userId}' to just 'userId'
             songs: selectedSongs
         };
 
@@ -785,6 +785,67 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
             setCurrentFilteredSongs(prev => updateSongList(prev));
         }
     };
+
+    const toggleFollow = async (artistId: number) => {
+        if (!userId) return;
+
+        const artistToUpdate = allSongs.find(s => s.artist?.id === artistId)?.artist;
+        if (!artistToUpdate) return;
+
+        // 1. Identify if we are currently following
+        const isCurrentlyFollowing = userLibrary?.followedArtists.some(a => a.id === artistId);
+
+        // 2. Optimistic UI Update: Update Library
+        setUserLibrary(prev => {
+            if (!prev) return null;
+            if (isCurrentlyFollowing) {
+                return {
+                    ...prev,
+                    followedArtists: prev.followedArtists.filter(a => a.id !== artistId)
+                };
+            } else {
+                return {
+                    ...prev,
+                    followedArtists: [...prev.followedArtists, artistToUpdate]
+                };
+            }
+        });
+
+        // 3. Optimistic UI Update: Update Followers Count in allSongs
+        const followerChange = isCurrentlyFollowing ? -1 : 1;
+        setAllSongs(prev => prev.map(song => {
+            if (song.artist?.id === artistId) {
+                return {
+                    ...song,
+                    artist: {
+                        ...song.artist,
+                        followers: (song.artist.followers || 0) + followerChange
+                    }
+                };
+            }
+            return song;
+        }));
+
+        // 4. Backend Call
+        try {
+            const token = sessionStorage.getItem("authToken");
+            await fetch(`http://localhost:8081/api/artists/${artistId}/follow?userId=${userId}`, {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${token}` }
+            });
+
+            toast.current?.show({
+                severity: 'success',
+                summary: isCurrentlyFollowing ? 'Unfollowed' : 'Following',
+                detail: `${artistToUpdate.name} updated in your library`,
+                life: 2000
+            });
+        } catch (error) {
+            console.error("Follow toggle failed", error);
+            // Optional: Revert state here if the API fails
+        }
+    };
+
     return (
         <div className="music-platform-wrapper flex min-h-screen">
             {/* Global notifications (used by Artist Upload + profile actions) */}
@@ -875,6 +936,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                     (() => {
                         const artistSongs = allSongs.filter(s => s.artist?.id === selectedArtistId);
                         const artistInfo = artistSongs[0]?.artist;
+                        const isFollowing = userLibrary?.followedArtists.some(a => a.id === selectedArtistId) || false;
 
                         // Finding albums (Playlists with "album" in description)
                         // Added ?. to description and artist
@@ -899,6 +961,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                                 appearingInPlaylists={userPlaylists}
                                 onSongSelect={(song) => { setCurrentSong(song); setIsPlaying(true); }}
                                 onAlbumClick={handlePlaylistClick}
+                                isFollowing={isFollowing} // <--- Pass this
+                                onToggleFollow={() => toggleFollow(artistInfo.id)}
                             />
                         ) : <div className="p-8">Artist profile not found.</div>;
                     })()
@@ -924,7 +988,21 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                             setCurrentSong(song);
                             setIsPlaying(true);
                         }}
-                        onToggleLike={toggleLike} // Pass function
+                        onToggleLike={toggleLike}
+                        onPlayAll={(likedSongs) => {
+                            if (likedSongs.length > 0) {
+                                setCurrentFilteredSongs(likedSongs); // Set the queue to just Liked Songs
+                                setCurrentSong(likedSongs[0]);      // Play the first one
+                                setIsPlaying(true);
+
+                                toast.current?.show({
+                                    severity: 'info',
+                                    summary: 'Playing Liked Songs',
+                                    detail: `Starting your favorites mix`,
+                                    life: 2000
+                                });
+                            }
+                        }}// Pass function
                     />
                 ) : (currentView === 'playlist' ? (
                     <PlaylistPage
@@ -953,9 +1031,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
 
                     />
                 ) : (
-                    React.Children.map(children, child => {
-                        if (!React.isValidElement(child)) return child;
-
+                    React.Children.map(children, (child) => {
+                        if (!React.isValidElement(child)) { return child };
                         const isSearching = search.trim() !== "";
 
                         return (
@@ -1000,6 +1077,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                                         handleSongSelect: (song: Song) => {
                                             setCurrentSong(song);
                                             setIsPlaying(true);
+                                            mainContentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
                                         },
                                         onNavigate: handleNavigate, // <--- CRITICAL UPDATE
                                         onToggleLike: toggleLike,
@@ -1008,8 +1086,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                                 </div>
                             </div>
                         );
-                    })
-                ))}
+                    })as any)
+                )}
             </div>
 
             {currentSong && (

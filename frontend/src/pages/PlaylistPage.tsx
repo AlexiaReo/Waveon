@@ -42,7 +42,7 @@ export const PlaylistPage: React.FC<PlaylistPageProps> = ({
             {/* --- Playlist Info Header --- */}
             <div className="flex flex-col md:flex-row gap-6 items-end p-6 bg-gradient-to-b from-transparent to-black/20">
                 <img
-                    src={playlist.imageUrl || 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1000&auto=format&fit=crop'}
+                    src={playlist.imageUrl}
                     alt={playlist.title}
                     style={{ width: '192px', height: '192px', objectFit: 'cover' }}
                     className="shadow-[0_8px_24px_rgba(0,0,0,0.5)] rounded-md flex-shrink-0 bg-[#333]"
