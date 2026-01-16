@@ -2,6 +2,12 @@ spring:
   application:
     name: backend
 
+  profiles:
+    # Optional local profile for dev-only overrides in `application-local.yaml`.
+    # Activate via: SPRING_PROFILES_ACTIVE=local
+    group:
+      local: local
+
   config:
     # Running Gradle tasks from the `backend/` folder means the repo-level `env.properties`
     # lives one directory up.

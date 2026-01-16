@@ -154,7 +154,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                 });
                 return false;
             }
-            const response = await fetch("http://localhost:8081/api/songs", {
+            const response = await fetch(apiUrl("/songs"), {
                 method: "POST",
                 headers: {
                     "Authorization": `Bearer ${token}`
@@ -583,7 +583,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         };
 
         try {
-            const response = await fetch("http://localhost:8081/api/playlists", {
+            const response = await fetch(apiUrl("/playlists"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -633,7 +633,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
         }
 
         try {
-            const res = await authFetch(`http://localhost:8081/api/playlists/${playlistId}`);
+            // authFetch expects a relative API path; passing an absolute URL breaks apiUrl() and can double-prefix `/api`.
+            const res = await authFetch(`/playlists/${playlistId}`);
             if (!res.ok) throw new Error(`Failed to fetch playlist ${playlistId}`);
             const full: Playlist = await res.json();
 
@@ -773,7 +774,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
 
         // 2. Call Backend
         try {
-            await authFetch(`http://localhost:8081/api/songs/${songId}/like?userId=${userId}`, {
+            // authFetch expects a relative API path; passing an absolute URL breaks apiUrl() and can double-prefix `/api`.
+            await authFetch(`/songs/${songId}/like?userId=${userId}`, {
                 method: "POST"
             });
         } catch (error) {
@@ -862,7 +864,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, userId, onLogout
                         userId={effectiveUserId as number}
                         viewerId={effectiveUserId as number}
                         onBack={() => setCurrentView('home')}
-                        onOpenPlaylist={(playlistId: number) => handlePlaylistClick(playlistId)}
+                        // Use the dedicated handler that also starts playback.
+                        onOpenPlaylist={(playlistId: number) => handlePlayPlaylist(playlistId)}
                         isArtist={userRole === 'ROLE_ARTIST'}
                         onBecomeArtist={handleBecomeArtist}
                         onLogout={handleLogout}

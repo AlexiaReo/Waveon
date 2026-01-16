@@ -10,9 +10,8 @@ description = 'Demo project for Spring Boot'
 
 java {
     toolchain {
-        // Cloud Run and most hosted environments reliably support Java 21 (LTS).
-        // Java 24 is not widely supported by deployment targets.
-        languageVersion = JavaLanguageVersion.of(21)
+        // Keep toolchain aligned with `main`.
+        languageVersion = JavaLanguageVersion.of(24)
     }
 }
 

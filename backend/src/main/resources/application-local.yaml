@@ -1,0 +1,9 @@
+# Local-only overrides.
+# Activate with: SPRING_PROFILES_ACTIVE=local
+
+spring:
+  flyway:
+    # Local dev convenience: don't fail startup if a past migration file was edited.
+    # Production should keep validation enabled.
+    validate-on-migrate: false
+

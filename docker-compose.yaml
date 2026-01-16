@@ -15,6 +15,9 @@ services:
       - db
     volumes:
       - ./backend/src/main/resources/audio:/app/audio
+      # Persist uploaded media outside the container so covers/audio remain available after restarts.
+      - ./backend/uploads/audio:/app/uploads/audio
+      - ./backend/uploads/images:/app/uploads/images
   frontend:
     build:
       context: ./frontend
