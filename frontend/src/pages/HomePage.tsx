@@ -8,19 +8,19 @@ interface HomePageProps {
     handleSongSelect?: (song: Song) => void;
     onArtistClick?: (id: number) => void;
     onNavigate?: (view: any) => void;
-    onToggleLike: (id: number) => void; // Define prop
+    onToggleLike: (id: number) => void; 
     isSearching?: boolean;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
-                                                      songs=[],
-                                                      filteredSongs=[],
-                                                      handleSongSelect = () => {},
-                                                      onArtistClick,
-                                                      onNavigate = () => {},
-                                                      isSearching = false,
-                                                      onToggleLike // Destructure prop
-                                                  }) => {
+    songs = [],
+    filteredSongs = [],
+    handleSongSelect = () => {},
+    onArtistClick,
+    onNavigate = () => {},
+    isSearching = false,
+    onToggleLike
+}) => {
 
     const cardGradients = [
         { background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
@@ -31,6 +31,7 @@ export const HomePage: React.FC<HomePageProps> = ({
         { background: 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)' },
     ];
 
+    // --- Search View ---
     if (isSearching) {
         return (
             <section>
@@ -40,11 +41,12 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <div className="card-grid">
                     {filteredSongs.map((song, index) => (
                         <MusicCard
-                            key={`song-${song.id}`}
+                            key={`search-song-${song.id}`}
                             song={song}
                             onSongSelect={handleSongSelect}
+                            onArtistClick={onArtistClick}
                             gradientStyle={cardGradients[index % cardGradients.length]}
-                            onToggleLike={onToggleLike} // <--- PASSED HERE
+                            onToggleLike={onToggleLike}
                         />
                     ))}
                 </div>
@@ -52,39 +54,52 @@ export const HomePage: React.FC<HomePageProps> = ({
         );
     }
 
+    // --- Regular View ---
     return (
-        <>
+        <div className="flex flex-col gap-12">
+            {/* Recommended Section */}
             <section>
                 <div className="section-header flex justify-between items-center mb-6">
                     <h2 className="text-2xl m-0 font-bold">Recommended Songs</h2>
-                    <span onClick={() => onNavigate('explore')} className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors cursor-pointer">See All</span>
+                    <span 
+                        onClick={() => onNavigate('explore')} 
+                        className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors cursor-pointer"
+                    >
+                        See All
+                    </span>
                 </div>
                 <div className="card-grid">
                     {filteredSongs.slice(0, 16).map((song, index) => (
                         <MusicCard
-                            key={`song-${song.id}`}
+                            key={`rec-song-${song.id}`}
                             song={song}
                             onSongSelect={handleSongSelect}
                             onArtistClick={onArtistClick}
                             gradientStyle={cardGradients[index % cardGradients.length]}
-                            onToggleLike={onToggleLike} // <--- PASSED HERE
+                            onToggleLike={onToggleLike}
                         />
                     ))}
                 </div>
             </section>
 
+            {/* Liked Songs Section (Merged from Main) */}
             <section>
                 <div className="section-header flex justify-between items-center mb-6">
-                    <h2 className="text-2xl m-0 font-bold">Top Songs</h2>
-                    <span onClick={() => onNavigate('favorites')} className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors cursor-pointer">See All</span>
+                    <h2 className="text-2xl m-0 font-bold">Liked Songs</h2>
+                    <span 
+                        onClick={() => onNavigate('favorites')} 
+                        className="see-all text-gray-300 text-sm font-medium hover:text-white transition-colors cursor-pointer"
+                    >
+                        See All
+                    </span>
                 </div>
                 <div className="card-grid">
                     {songs
-                        .filter(song => song.isLiked) // Only Liked
-                        .slice(0, 7)                  // Only First 7
+                        .filter(song => song.isLiked)
+                        .slice(0, 7)
                         .map((song, index) => (
                             <MusicCard
-                                key={`top-song-${song.id}`}
+                                key={`liked-song-${song.id}`}
                                 song={song}
                                 onSongSelect={handleSongSelect}
                                 onArtistClick={onArtistClick}
@@ -94,6 +109,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                         ))}
                 </div>
             </section>
-        </>
+        </div>
     );
 };

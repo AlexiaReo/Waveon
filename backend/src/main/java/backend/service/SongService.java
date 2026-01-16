@@ -45,7 +45,11 @@ public class SongService {
         this.userRepository = userRepository;
     }
 
+    /**
+     * Creates a new song, uploads files, and updates the artist profile if necessary.
+     */
     public SongDTO createSong(String name, String genreName, MultipartFile image, MultipartFile file, Authentication authentication, Long artistId) {
+        // 1. Authenticate user
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new RuntimeException("Unauthenticated request");
         }
@@ -53,20 +57,27 @@ public class SongService {
         User user = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // 2. Resolve Artist (by specified ID or authenticated user's name)
         Artist artist;
         if (artistId != null) {
-            artist = artistRepository.findById(artistId).orElseThrow();
+            artist = artistRepository.findById(artistId)
+                    .orElseThrow(() -> new RuntimeException("Artist not found with id: " + artistId));
         } else {
             String artistName = user.getUsername();
             artist = artistRepository.findByName(artistName)
-                    .orElseGet(() -> artistRepository.save(Artist.builder().name(artistName).followers(0L).build()));
+                    .orElseGet(() -> artistRepository.save(Artist.builder()
+                            .name(artistName)
+                            .followers(0L)
+                            .build()));
         }
 
+        // 3. Save the audio and image files
         String audioFileName = saveAudioFile(file);
         String imageUrl = "";
 
         if (image != null && !image.isEmpty()) {
             try {
+                // Determine if using Google Cloud Storage or local fallback
                 if (googleCloudStorageService != null) {
                     imageUrl = googleCloudStorageService.uploadImage(image);
                 } else {
@@ -77,23 +88,28 @@ public class SongService {
             }
         }
 
+        // 4. Update Artist Profile Image if it doesn't already exist
         if (artist.getImageUrl() == null || artist.getImageUrl().isEmpty()) {
             artist.setImageUrl(imageUrl);
             artistRepository.save(artist);
         }
 
+        // 5. Build and Map Song Entity
         Song song = new Song();
         song.setName(name);
         song.setArtist(artist);
+        
         try {
             song.setGenre(Genre.valueOf(genreName.toUpperCase()));
         } catch (Exception e) {
-            song.setGenre(Genre.OTHER);
+            song.setGenre(Genre.OTHER); // Fallback for invalid genre input
         }
+        
         song.setImageUrl(imageUrl);
         song.setFilepath(audioFileName);
 
-        return songMapper.toDTO(songRepository.save(song));
+        Song saved = songRepository.save(song);
+        return songMapper.toDTO(saved);
     }
 
     private String saveAudioFile(MultipartFile file) {
@@ -103,7 +119,9 @@ public class SongService {
             String fileName = System.currentTimeMillis() + "_" + file.getOriginalFilename();
             Files.copy(file.getInputStream(), path.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
             return fileName;
-        } catch (IOException e) { throw new RuntimeException(e); }
+        } catch (IOException e) { 
+            throw new RuntimeException("Could not save audio file", e); 
+        }
     }
 
     private String saveImageFileLocally(MultipartFile file) throws IOException {
@@ -115,6 +133,19 @@ public class SongService {
     }
 
     public List<SongDTO> getAllSongs() {
-        return songRepository.findAll().stream().map(songMapper::toDTO).collect(Collectors.toList());
+        return songRepository.findAll().stream()
+                .map(songMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public List<SongDTO> getMySongs(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Unauthenticated request");
+        }
+        String artistName = authentication.getName();
+        return songRepository.findByArtist_NameOrderByIdDesc(artistName)
+                .stream()
+                .map(songMapper::toDTO)
+                .collect(Collectors.toList());
     }
 }
