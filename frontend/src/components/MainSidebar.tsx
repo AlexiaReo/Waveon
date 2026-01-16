@@ -14,7 +14,7 @@ interface MainSidebarProps {
     visible: boolean;
     setVisible: (v: boolean) => void;
     playlists: Playlist[];
-    onNavigate: (view: 'home' | 'library' | 'explore' | 'favorites' | 'playlist') => void;
+    onNavigate: (view: 'home' | 'library' | 'explore' | 'favorites' | 'playlist'| 'galaxy') => void;
     handlePlaylistClick: (playlistId: number) => void;
     onCreatePlaylist: () => void; // ADDED: New prop
     activePlaylistId: number | null;
@@ -58,29 +58,36 @@ export const MainSidebar: React.FC<MainSidebarProps> = ({
                     className={`custom-nav-item ${currentView === 'home' && !activePlaylistId ? 'active' : ''}`}
                     onClick={() => onNavigate('home')}
                 >
-                    <HomeOutlinedIcon fontSize="inherit" /> <span>Home</span>
+                    <HomeOutlinedIcon fontSize="inherit"/> <span>Home</span>
                 </div>
                 <div
                     className={`custom-nav-item ${currentView === 'explore' ? 'active' : ''}`}
                     onClick={() => onNavigate('explore')}
                 >
-                    <ExploreOutlinedIcon fontSize="inherit" /> <span>Explore</span>
+                    <ExploreOutlinedIcon fontSize="inherit"/> <span>Explore</span>
+                </div>
+                <div
+                    className={`custom-nav-item ${currentView === 'galaxy' ? 'active' : ''}`}
+                    onClick={() => onNavigate('galaxy')}
+                >
+                    <i className="pi pi-compass" ></i>
+                    <span>Galaxy of Music</span>
                 </div>
                 {userRole === 'ROLE_ARTIST' && (
                     <div
                         className={`custom-nav-item ${currentView === 'artist-studio' ? 'active' : ''}`}
                         onClick={() => onNavigate('artist-studio' as any)}
-                        style={{ marginTop: '10px', border: '1px solid rgba(241, 88, 9, 0.3)' }}
+                        style={{marginTop: '10px', border: '1px solid rgba(241, 88, 9, 0.3)'}}
                     >
-                        <CloudUploadIcon fontSize="inherit" style={{ color: '#f15809' }} />
-                        <span style={{ color: '#f15809', fontWeight: 'bold' }}>Only for Artist</span>
+                        <CloudUploadIcon fontSize="inherit" style={{color: '#f15809'}}/>
+                        <span style={{color: '#f15809', fontWeight: 'bold'}}>Only for Artist</span>
                     </div>
                 )}
                 <div
                     className={`custom-nav-item ${currentView === 'library' ? 'active' : ''}`}
                     onClick={() => onNavigate('library')}
                 >
-                    <LibraryMusicOutlinedIcon fontSize="inherit" /> <span>Your Library</span>
+                    <LibraryMusicOutlinedIcon fontSize="inherit"/> <span>Your Library</span>
                 </div>
             </nav>
 

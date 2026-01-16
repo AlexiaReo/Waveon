@@ -11,6 +11,7 @@ export interface Song {
     id: number;
     name: string;
     artist: Artist;
+    genre: string;
     filepath: string;
     imageUrl: string;
     isLiked?: boolean;
